@@ -33,6 +33,9 @@ Codex는 `@import`도 하위 디렉토리 탐색도 없으므로 **스택별 Cod
 | 노드 | LangGraph 노드 함수 하나 | 스텝, 단계, 에이전트 |
 | 프로필 | interview 노드가 수집하는 사용자의 도메인·기술 노출·선호·환경·위임 범위 | 페르소나, 컨텍스트 |
 | 작업자 컨텍스트 | 산출물 AGENTS.md 안에서 프로필이 번역돼 들어가는 섹션 이름 | 사용자 컨텍스트 |
+| 스펙 항목 | 스펙을 이루는 결정 하나 (이름·영역·결정 주체·상태·내용). 노드 사이를 오가는 데이터 | 체크리스트, 요구사항 |
+| 질문 묶음 | 빌더가 사용자에게 한 번에 보내는 질문 1~10개 | 질문지, 폼 |
+| 공통 스킬 | 빌더가 미리 만들어 실행 검증해 둔 스킬 ("새로 쓰는 스킬" 의 반대) | 기본 스킬, 내장 스킬 |
 
 ## 설계 전제 (코드에 없는 것)
 
@@ -162,6 +165,8 @@ docs/
 ## 참고
 
 - 설계 상세: `docs/design/design.md`
+- 질문 묶음 · 답 제출 JSON 규격: `docs/design/question-format.md`
+- 구현 순서 · worktree 별 작업 단위: `docs/design/work-units.md`
 - LangGraph 상태/체크포인트 결정: `docs/design/state.md`
 - interview 노드 / 사용자 프로필: `docs/design/interview-profile.md`
 - 작업자 VOC (왜 이 규칙들이 있는지): `docs/design/voc.md`
