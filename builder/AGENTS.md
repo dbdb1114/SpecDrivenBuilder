@@ -5,13 +5,15 @@
 ## 구조
 
 ```
-graph/        LangGraph 그래프 조립 (노드 등록, 엣지, 조건 분기)
-nodes/        노드 함수 — 노드 하나 = 파일 하나
-state/        State 스키마 (TypedDict / Pydantic)
+src/specbuilder/     코드 패키지 (src 레이아웃 — graph·state·llm 같은 일반명이 다른 패키지와 충돌하지 않도록)
+  graph/             LangGraph 그래프 조립 (노드 등록, 엣지, 조건 분기) · main.py 가 CLI
+  nodes/             노드 함수 — 노드 하나 = 파일 하나
+  state/             State 스키마 (TypedDict / Pydantic)
+  llm/               LLM 클라이언트 래퍼 — 노드는 여기만 통해서 호출
+  api/               FastAPI 라우터 (`/api/**`) — 그래프를 HTTP 로 노출만 함, 로직 없음
+  paths.py           builder/ 기준 데이터 디렉토리 경로
 prompts/      노드별 시스템 프롬프트 (.md) — 코드에 하드코딩 금지
 templates/    산출물 템플릿 (SKILL.md, AGENTS.md, spec.md)
-llm/          LLM 클라이언트 래퍼 — 노드는 여기만 통해서 호출
-api/          FastAPI 라우터 (`/api/**`) — 그래프를 HTTP 로 노출만 함, 로직 없음
 output/       생성 결과 — git 추적 안 함
 tests/        nodes/ 와 1:1 대응. fakes/fake_llm.py
 evals/        품질 회귀 세트 — cases/ 에 비개발자식 요청 원문 (루트 "품질 판정")
@@ -21,13 +23,14 @@ evals/        품질 회귀 세트 — cases/ 에 비개발자식 요청 원문 
 
 ```bash
 uv sync                          # 의존성
-uv run python -m graph.main      # 그래프 CLI 실행
-uv run uvicorn api.main:app --reload   # FastAPI 개발 서버
+uv run python -m specbuilder.graph.main evals/cases/01-short.md   # 그래프 CLI 실행 (답은 터미널 입력 또는 stdin 파이프)
+uv run uvicorn specbuilder.api.main:app --reload   # FastAPI 개발 서버
 uv run pytest                    # 테스트
 uv run ruff check . && uv run ruff format .
 ```
 
-환경 변수는 `.env` 에서 읽음 (`ANTHROPIC_API_KEY`, `OPENAI_API_KEY`). `.env.example` 을 갱신할 것.
+LLM 호출은 현재 `claude -p` 서브프로세스(`ClaudeCLIClient`)로 한다 — API 키 없이 로그인된 요금제로 돈다. 모델은 환경 변수
+`SPECBUILDER_MODEL` (기본 `claude-sonnet-5-5`). `.env` 자동 로드는 아직 없음 — 셸에서 export. 변수를 추가하면 `.env.example` 을 갱신할 것.
 
 ## 코드 규칙
 
@@ -45,8 +48,8 @@ uv run ruff check . && uv run ruff format .
 - 타입 힌트는 함수 시그니처에만. 지역 변수에는 붙이지 않음.
 - 주석은 "왜" 만. "무엇" 은 적지 말 것. docstring 은 public 함수에만.
 - 의존성 추가는 `uv add` 로. `pyproject.toml` 직접 편집 금지. `uv.lock` 커밋.
-- `graph`·`state`·`api`·`llm`은 최상위 패키지 이름으로는 일반명이라 충돌 위험이 있다. 첫 스캐폴드 때
-  `src/<패키지>/` 레이아웃으로 갈지 결정하고 위 명령어를 맞춘다 (미결정).
+- 코드는 `src/specbuilder/` 아래, import 는 `specbuilder.` 로 시작 (2026-11-06 결정, #1). 테스트는 `tests.fakes` 처럼 `tests.` 로.
+- LLM 을 쓰는 노드는 `make_<노드명>(llm)` 팩토리로 클라이언트를 주입받고, 반환된 함수가 `(state) -> dict | Command` 다.
 
 ## 하지 말 것
 

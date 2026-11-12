@@ -1,0 +1,22 @@
+[project]
+name = "specbuilder"
+version = "0.1.0"
+description = "비개발자 요청을 스펙·SKILL.md·AGENTS.md 산출물로 만드는 LangGraph 빌더"
+requires-python = ">=3.14"
+dependencies = [
+    "langgraph>=1.2.20",
+    "langgraph-checkpoint-sqlite>=3.1.3",
+]
+
+[project.scripts]
+specbuilder = "specbuilder.graph.main:main"
+
+[build-system]
+requires = ["uv_build>=0.13.1,<0.14.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "pytest>=9.2.0",
+    "ruff>=0.17.4",
+]
