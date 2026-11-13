@@ -1,13 +1,38 @@
 import re
 
 from specbuilder.llm import LLMCallError, LLMClient
-from specbuilder.nodes.interview_user import render_context
 from specbuilder.paths import load_prompt
-from specbuilder.state import State
+from specbuilder.state import SpecItem, State
 
 REQUIRED_FILES = ("spec.md", "SKILL.md", "AGENTS.md")
 # 긴 마크다운을 JSON 문자열로 받으면 이스케이프가 자주 깨진다 — 구분선 형식이 더 견고하다.
 FILE_MARKER = re.compile(r"^=== FILE: (\S+) ===[ \t]*$", re.MULTILINE)
+
+
+AREA_LABELS = {"function": "용도·기능", "design": "디자인", "tech": "기술"}
+
+
+def _is_user_decision(item: SpecItem) -> bool:
+    return item["decided_by"] == "user" and item["status"] == "confirmed"
+
+
+def _render_item(item: SpecItem) -> str:
+    # 기본 방향이 빈 맡김 항목(사용자가 "알아서"를 골랐거나 묻기를 그만둔 경우)은 여기서 정하라고 표시한다.
+    content = item["content"].strip() or "(기본 방향 없음 — 정해서 적을 것)"
+    return f"- [{AREA_LABELS[item['area']]}] {item['name']}: {content}"
+
+
+def render_context(state: State) -> str:
+    """요청 원문과 스펙 항목을 "사용자가 정한 것 / 작업자가 정하는 것" 으로 나눈 데이터 블록으로 만든다."""
+    items = state["spec_items"]
+    user = [_render_item(i) for i in items if _is_user_decision(i)]
+    worker = [_render_item(i) for i in items if not _is_user_decision(i)]
+    return "\n".join(
+        ["## 요청 원문", state["request"].strip(), "", "## 사용자가 정한 것"]
+        + (user or ["(없음)"])
+        + ["", "## 작업자가 정하는 것"]
+        + (worker or ["(없음)"])
+    )
 
 
 def parse_files(text: str) -> dict[str, str]:
