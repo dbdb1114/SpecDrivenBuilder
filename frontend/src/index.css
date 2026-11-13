@@ -1,0 +1,41 @@
+:root {
+  --color-text: #1d2330;
+  --color-muted: #5b6475;
+  --color-bg: #f6f7f9;
+  --color-surface: #ffffff;
+  --color-border: #d8dce3;
+  --color-accent: #2f5bd3;
+  --color-accent-soft: #e8eefc;
+  --color-danger: #b42318;
+  --color-danger-soft: #fdecea;
+  --radius: 10px;
+
+  font-family:
+    "Pretendard", "Apple SD Gothic Neo", "Noto Sans KR", system-ui, -apple-system, sans-serif;
+  line-height: 1.6;
+  color: var(--color-text);
+  background: var(--color-bg);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+}
+
+button,
+textarea,
+input {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
