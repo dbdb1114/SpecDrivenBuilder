@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from "vitest";
 import { DonePage } from "./DonePage";
 
 const ARTIFACTS = {
-  "spec.md": "# 가계부\n\n## 사용자가 정한 것\n- 혼자 쓴다",
+  "docs/spec.md": "# 가계부\n\n## 사용자가 정한 것\n- 혼자 쓴다",
   "AGENTS.md": "# 규칙",
   ".claude/skills/build-ledger/SKILL.md": "---\nname: build-ledger\n---",
 };
