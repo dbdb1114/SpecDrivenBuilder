@@ -84,12 +84,39 @@ def _preview_item() -> SpecItem:
     }
 
 
-def _parse_reply(text: str, items: list) -> tuple[list, list, Preview | None]:
+def reopened_ids(items: list, qa: list) -> set[str]:
+    """다시 물어야 하는 디자인 항목 — 아직 모름인데 지난 답이 있다 (interview_user.reopened_ids 와 같은 판정, 영역만 다름).
+
+    확인 화면에서 고치기로 고른 항목과, 미리보기에서 "색을/배치를 바꿀래요"로 되돌린 항목이 여기에 든다.
+    """
+    answered = {line["item_id"] for line in qa}
+    return {
+        item["id"] for item in items if is_open(item, AREA) and item["id"] in answered
+    }
+
+
+def _render_context(state: State) -> str:
+    lines = [render_context(state)]
+    # preview-check 는 코드가 묻는 항목이라 LLM 에게 알릴 필요가 없다.
+    reopened = sorted(reopened_ids(state["spec_items"], state["qa"]) - CODE_OWNED)
+    if reopened:
+        lines += ["", "## 사용자가 고치기로 고른 디자인 항목", ", ".join(reopened)]
+    return "\n".join(lines)
+
+
+def _parse_reply(
+    text: str, items: list, reopened: set[str]
+) -> tuple[list, list, Preview | None]:
     try:
         reply = design_reply_adapter.validate_python(parse_json_reply(text))
     except ValidationError as e:
         raise LLMCallError(f"{NODE} 응답이 규격에 맞지 않음: {e}") from e
-    updates = [item for item in reply["items"] if item["id"] not in CODE_OWNED]
+    # 고치기로 고른 항목을 LLM 이 지난 답으로 다시 채우면 고치기가 조용히 무시된다 — 다시 묻게 아직 모름으로 둔다.
+    updates = [
+        item
+        for item in reply["items"]
+        if item["id"] not in CODE_OWNED and item["id"] not in reopened
+    ]
     for item in updates:
         if item["area"] != AREA:
             raise LLMCallError(f"{NODE} 는 {AREA} 항목만 다룬다: {item['id']}")
@@ -283,7 +310,9 @@ def make_interview_design(llm: LLMClient):
             return Command(goto=NEXT)
 
         items, questions, draft = _parse_reply(
-            llm.complete(system, render_context(state), schema), items
+            llm.complete(system, _render_context(state), schema),
+            items,
+            reopened_ids(items, state["qa"]),
         )
         if first_visit and not any(item["area"] == AREA for item in items):
             return Command(update={"spec_items": [*items, _screen_item()]}, goto=NEXT)

@@ -330,7 +330,13 @@ def test_change_color_reasks_only_color_then_previews_again():
         and bundle["preview"]["layout"] == "mobile-tabs"
     )
 
-    final = graph.invoke(pick(("q1", "o1")), config)  # 맞아요
+    screen = graph.invoke(pick(("q1", "o1")), config)["__interrupt__"][
+        0
+    ].value  # 맞아요
+    # 확인 화면에서 디자인 항목은 사용자가 고칠 수 있다 (screen·작업자 항목은 아님)
+    editable = {i["id"] for i in screen["items"] if i["editable"]}
+    assert {"color-tone", "layout", "preview-check"} <= editable
+    final = graph.invoke(Command(resume={"action": "confirm"}), config)
     by_id = {i["id"]: i for i in final["spec_items"]}
     assert by_id["preview-check"]["status"] == "confirmed"
     assert by_id["color-tone"]["content"] == f"따뜻한 베이지 ({', '.join(BEIGE)})"
@@ -390,3 +396,120 @@ def test_passes_reply_json_schema_with_layout_enum():
     _, llm = run([design_reply()], state_with([]))
     schema = json.dumps(llm.schemas[0][1])
     assert '"preview"' in schema and '"mobile-tabs"' in schema
+
+
+def test_reopened_item_is_asked_again_even_if_llm_reconfirms_it():
+    """확인 화면에서 고친 색 톤: 아직 모름 + 지난 답이 있음 → LLM 이 지난 답으로 확정해도 버리고 다시 묻는다."""
+    items = [
+        design("color-tone"),
+        design("layout", "confirmed", "탭 [mobile-tabs]"),
+        design("preview-check", "confirmed", "맞아요"),
+    ]
+    qa = [
+        {
+            "node": "interview_design",
+            "round": 1,
+            "item_id": "color-tone",
+            "question": "색은요?",
+            "answer": "차분한 남색",
+        },
+        {
+            "node": "interview_design",
+            "round": 2,
+            "item_id": "preview-check",
+            "question": "이 느낌이 맞나요?",
+            "answer": "맞아요",
+        },
+    ]
+    reply = design_reply(
+        [design("color-tone", "confirmed", f"차분한 남색 ({', '.join(NAVY)})")],
+        [color_question()],
+    )
+    result, llm = run([reply], state_with(items, qa=qa))
+
+    by_id = {i["id"]: i for i in result.update["spec_items"]}
+    assert by_id["color-tone"]["status"] == "unknown"
+    assert (
+        by_id["preview-check"]["status"] == "unknown"
+    )  # 색을 다시 고르면 미리보기도 다시
+    assert [q["item_id"] for q in result.update["pending_bundle"]["questions"]] == [
+        "color-tone"
+    ]
+    prompt = llm.calls_for("interview_design")[0]
+    assert "## 사용자가 고치기로 고른 디자인 항목\ncolor-tone" in prompt
+    assert (
+        "preview-check" not in prompt.split("## 사용자가 고치기로 고른 디자인 항목")[1]
+    )
+
+
+def test_change_color_from_preview_is_not_refilled_from_old_answer():
+    """미리보기에서 "색을 바꿀래요" 로 되돌린 항목도 같은 판정으로 다시 묻는다."""
+    items = [
+        design("color-tone"),
+        design("layout", "confirmed", "탭 [mobile-tabs]"),
+        design("preview-check"),
+    ]
+    qa = [
+        {
+            "node": "interview_design",
+            "round": 1,
+            "item_id": "color-tone",
+            "question": "색은요?",
+            "answer": "차분한 남색",
+        }
+    ]
+    reply = design_reply([design("color-tone", "confirmed", "차분한 남색")], [])
+    with pytest.raises(LLMCallError, match="질문이 없음"):
+        run([reply], state_with(items, qa=qa, question_round=2))
+
+
+def test_revise_design_item_on_confirm_screen_asks_it_again():
+    """그래프 전체로: 확인 화면에서 색 톤을 고치기로 고르면 interview_user 는 지나가고 interview_design 이 색만 다시 묻는다."""
+    llm = FakeLLM(
+        {
+            "interview_design": [
+                design_reply(
+                    [design("color-tone"), design("layout")],
+                    [color_question(), layout_question()],
+                ),
+                design_reply([], [], draft_preview()),
+                design_reply(),
+                # 돌아온 뒤: LLM 이 지난 답으로 다시 확정하려 해도 버려지고 색을 다시 묻는다
+                design_reply(
+                    [design("color-tone", "confirmed", "차분한 남색")],
+                    [color_question()],
+                ),
+                design_reply([], [], draft_preview()),
+                design_reply(),
+            ]
+        }
+    )
+    graph = build_graph(llm, InMemorySaver())
+    config = {"configurable": {"thread_id": "d2"}}
+
+    def pick(*pairs):
+        answers = [
+            {"question_id": q, "kind": "option", "option_ids": [o]} for q, o in pairs
+        ]
+        value = graph.invoke(
+            Command(resume={"action": "submit", "answers": answers}), config
+        )
+        return value["__interrupt__"][0].value
+
+    graph.invoke(initial_state("동아리 휴대폰 앱"), config)
+    pick(("q1", "o1"), ("q2", "o1"))  # 남색 · mobile-tabs → 미리보기
+    screen = pick(("q1", "o1"))  # 맞아요 → 확인 화면
+    assert "items" in screen
+
+    again = graph.invoke(
+        Command(resume={"action": "revise", "item_ids": ["color-tone"]}), config
+    )["__interrupt__"][0].value
+    assert [q["item_id"] for q in again["questions"]] == ["color-tone"]
+    assert again["preview"] is None
+
+    preview = pick(("q1", "o2"))  # 베이지 → 미리보기 다시
+    assert preview["preview"]["colors"] == BEIGE
+    screen = pick(("q1", "o1"))  # 맞아요 → 확인 화면
+    by_id = {i["id"]: i for i in screen["items"]}
+    assert by_id["color-tone"]["content"] == f"따뜻한 베이지 ({', '.join(BEIGE)})"
+    assert by_id["preview-check"]["status"] == "confirmed"
