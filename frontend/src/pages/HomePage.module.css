@@ -12,7 +12,7 @@
   top: 40px;
   width: 520px;
   height: 520px;
-  border: 1px dashed #2a2a31;
+  border: 1px dashed var(--line-4);
   border-radius: 50%;
   pointer-events: none;
 }
@@ -44,7 +44,7 @@
   gap: 10px;
   margin-bottom: 28px;
   padding: 7px 14px 7px 8px;
-  border: 1px solid #2a2a31;
+  border: 1px solid var(--line-4);
   border-radius: 999px;
   font-size: 13px;
   color: var(--muted);
@@ -53,8 +53,8 @@
 .tag {
   padding: 3px 9px;
   border-radius: 999px;
-  background: var(--ac);
-  color: var(--bg);
+  background: var(--ac-fill);
+  color: var(--on-ac);
   font-family: var(--font-mono);
   font-size: 11px;
   font-weight: 600;
@@ -149,14 +149,14 @@
   padding: 0 26px;
   border: 0;
   border-radius: 13px;
-  background: var(--ac);
-  color: var(--bg);
+  background: var(--ac-fill);
+  color: var(--on-ac);
   font-weight: 700;
   font-size: 16px;
 }
 
 .go:not(:disabled):hover {
-  background: #ffffff;
+  background: var(--ac-hover);
 }
 
 .error {
@@ -232,7 +232,7 @@
 .howDesc {
   font-size: 14px;
   line-height: 1.65;
-  color: #a2a2ab;
+  color: var(--muted-3);
 }
 
 .band {
@@ -242,8 +242,8 @@
   padding: 16px 0;
   border-top: 1px solid var(--line);
   border-bottom: 1px solid var(--line);
-  background: var(--ac);
-  color: var(--bg);
+  background: var(--ac-fill);
+  color: var(--on-ac);
   overflow: hidden;
 }
 
@@ -267,6 +267,6 @@
 .diamond {
   width: 10px;
   height: 10px;
-  background: var(--bg);
+  background: var(--on-ac);
   transform: rotate(45deg);
 }

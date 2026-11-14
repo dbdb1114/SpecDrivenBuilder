@@ -4,6 +4,17 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>SpecDrivenBuilder</title>
+    <script>
+      // 첫 그리기 전에 테마를 정한다 — React 가 붙인 뒤에 바꾸면 화면이 한 번 번쩍인다.
+      (function () {
+        var saved = null;
+        try {
+          saved = localStorage.getItem("theme");
+        } catch (e) {}
+        var theme = saved === "light" || saved === "dark" ? saved : matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
+        document.documentElement.dataset.theme = theme;
+      })();
+    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
