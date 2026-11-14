@@ -58,14 +58,14 @@
 .go {
   gap: 12px;
   padding: 0 30px;
-  background: var(--ac);
-  color: var(--bg);
+  background: var(--ac-fill);
+  color: var(--on-ac);
   font-weight: 700;
   font-size: 17px;
 }
 
 .go:hover {
-  background: #ffffff;
+  background: var(--ac-hover);
 }
 
 .ghost {
@@ -213,7 +213,7 @@
   padding: 18px;
   border: 1px solid var(--line);
   border-radius: 14px;
-  background: #08080a;
+  background: var(--code-bg);
   font-family: var(--font-mono);
   font-size: 12.5px;
   line-height: 1.8;

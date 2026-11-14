@@ -14,9 +14,21 @@
   --muted: #b4b4bc;
   --muted-2: #8e8e98;
   --dim: #5e5e68;
-  /* 강조색은 이 변수 하나로 바꾼다. 강조색 위의 글자는 항상 --bg. */
+  --line-4: #2a2a31;
+  --surface-4: #1c1c22;
+  --hover: #17171c;
+  --code-bg: #08080a;
+  --muted-3: #a2a2ab;
+  --header-bg: rgba(10, 10, 12, 0.82);
+  /* 강조색. --ac 는 글자·선, --ac-fill 은 채운 면, 그 위의 글자는 항상 --on-ac.
+     밝은 테마에서 형광색 글자는 읽히지 않아 둘을 나눈다. */
   --ac: #d4ff3a;
+  --ac-fill: #d4ff3a;
+  --ac-hover: #ffffff;
+  --on-ac: #0a0a0c;
+  --scan: rgba(212, 255, 58, 0.08);
   --warn: #ff6b2c;
+  color-scheme: dark;
 
   --font-body: "Noto Sans KR", "Space Grotesk", system-ui, sans-serif;
   --font-display: "Space Grotesk", "Noto Sans KR", sans-serif;
@@ -35,13 +47,42 @@
   background: var(--bg);
 }
 
+/* 밝은 테마 — data-theme 은 index.html 의 스크립트가 첫 그리기 전에 붙인다 (저장된 선택, 없으면 시스템 설정). */
+:root[data-theme="light"] {
+  --bg: #f6f6f1;
+  --grid: #ebebe4;
+  --surface: #ffffff;
+  --surface-2: #fcfcf9;
+  --surface-3: #f0f0ea;
+  --surface-4: #f0f0ea;
+  --dock: #fafaf6;
+  --hover: #f3f3ed;
+  --code-bg: #f0f0ea;
+  --line: #e2e2da;
+  --line-2: #dadad1;
+  --line-3: #c8c8be;
+  --line-4: #d0d0c6;
+  --text: #131316;
+  --text-2: #2b2b32;
+  --muted: #50505a;
+  --muted-2: #63636d;
+  --muted-3: #5a5a64;
+  --dim: #85858e;
+  --header-bg: rgba(246, 246, 241, 0.86);
+  --ac: #456e00;
+  --ac-hover: #c0ee1c;
+  --scan: rgba(69, 110, 0, 0.07);
+  --warn: #c2410c;
+  color-scheme: light;
+}
+
 * {
   box-sizing: border-box;
 }
 
 ::selection {
-  background: var(--ac);
-  color: var(--bg);
+  background: var(--ac-fill);
+  color: var(--on-ac);
 }
 
 body {
