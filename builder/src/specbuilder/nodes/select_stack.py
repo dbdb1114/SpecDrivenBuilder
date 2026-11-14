@@ -39,6 +39,8 @@ class DraftTechItem(TypedDict):
     choice: NonEmpty
     reason: NonEmpty
     packages: Annotated[list[DraftPackage], Field(max_length=4)]
+    # 이 기술이 쓰이는 프로그램의 부분. 런타임처럼 여러 부분이 같이 쓰면 비운다.
+    parts: list[Literal["frontend", "backend", "database"]]
 
 
 class MissingInfo(TypedDict):
@@ -125,7 +127,13 @@ def _tech_items(drafts: list[DraftTechItem]) -> list[SpecItem]:
                 "decided_by": "worker",
                 # 빌더가 골랐지만 작업자가 따를 기본 방향이다 — 사용자가 확정한 것과 섞이지 않게 맡김으로 둔다.
                 "status": "delegated",
-                "content": render_content(draft["choice"], refs, draft["reason"]),
+                "content": render_content(
+                    draft["choice"],
+                    refs,
+                    draft["reason"],
+                    # 같은 부분을 두 번 적어도 한 번만 — 순서는 LLM 이 쓴 대로.
+                    list(dict.fromkeys(draft["parts"])),
+                ),
             }
         )
     return items

@@ -71,13 +71,19 @@ def package(registry: str, name: str, version: str) -> dict:
     return {"registry": registry, "name": name, "version": version}
 
 
-def tech(id: str, packages: list[dict] | None = None, choice: str = "고른 것") -> dict:
+def tech(
+    id: str,
+    packages: list[dict] | None = None,
+    choice: str = "고른 것",
+    parts: tuple[str, ...] = (),
+) -> dict:
     return {
         "id": id,
         "name": f"{id} 결정",
         "choice": choice,
         "reason": "혼자 쓰는 가계부라서",
         "packages": packages or [],
+        "parts": list(parts),
     }
 
 
@@ -92,6 +98,7 @@ def stack_reply(
                 "web-framework",
                 [package("npm", "next", "16.4.6"), package("npm", "react", "19.2.0")],
                 "Next.js",
+                ("frontend",),
             ),
         ]
     return json.dumps(
