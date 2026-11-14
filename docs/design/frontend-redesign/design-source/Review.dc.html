@@ -1,0 +1,406 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>산출물 미리보기·수정</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&amp;family=Noto+Sans+KR:wght@400;500;700;900&amp;family=JetBrains+Mono:wght@400;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0A0A0C}
+a{color:#D4FF3A}a:hover{color:#ffffff}
+.sdb *{box-sizing:border-box}
+@keyframes up{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:none}}
+@keyframes pop{from{opacity:0;transform:translateY(12px) scale(.96)}to{opacity:1;transform:none}}
+@keyframes slide{from{opacity:0;transform:translateX(-18px)}to{opacity:1;transform:none}}
+@keyframes lineIn{from{opacity:0;transform:translateX(14px)}to{opacity:1;transform:none}}
+@keyframes bounce{0%,80%,100%{transform:translateY(0);opacity:.4}40%{transform:translateY(-6px);opacity:1}}
+@keyframes toast{from{opacity:0;transform:translate(-50%,40px)}to{opacity:1;transform:translate(-50%,0)}}
+@keyframes ping{0%{transform:scale(1);opacity:.8}100%{transform:scale(2.6);opacity:0}}
+@keyframes sweep{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+.rise{animation:up .7s cubic-bezier(.16,.84,.24,1) both}
+.d1{animation-delay:.08s}.d2{animation-delay:.18s}.d3{animation-delay:.3s}
+.msg{animation:pop .45s cubic-bezier(.16,.84,.24,1) both}
+.tab{animation:slide .5s cubic-bezier(.16,.84,.24,1) both}
+.ln{animation:lineIn .4s cubic-bezier(.16,.84,.24,1) both;cursor:pointer;transition:background .15s}
+.ln:hover{background:#15151A}
+.dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:#F2F2F0;animation:bounce 1.1s infinite}
+.dot:nth-child(2){animation-delay:.15s}.dot:nth-child(3){animation-delay:.3s}
+.toast{animation:toast .5s cubic-bezier(.16,.84,.24,1) both}
+.ping{animation:ping 1.4s cubic-bezier(0,0,.2,1) infinite}
+.sweep{transform-origin:left;animation:sweep .9s cubic-bezier(.16,.84,.24,1) both}
+.btn{transition:transform .18s cubic-bezier(.2,.8,.2,1),background .18s,color .18s,border-color .18s;cursor:pointer}
+.btn:hover{transform:translateY(-2px)}
+.btn:active{transform:translateY(1px) scale(.98)}
+.chip:hover{background:#F2F2F0;color:#0A0A0C;border-color:#F2F2F0}
+.ftab:hover{background:#15151A}
+.go:hover{background:#ffffff}
+.ghost:hover{border-color:#F2F2F0}
+.sdb input:focus{outline:none}
+.field:focus-within{border-color:var(--ac)}
+.sdb button:focus-visible,.sdb a:focus-visible{outline:2px solid var(--ac);outline-offset:3px}
+@media (prefers-reduced-motion: reduce){.sdb *{animation:none !important;transition:none !important}}
+</style>
+</helmet>
+
+<div class="sdb" style="--ac: {{accent}}; min-height: 980px; background: #0A0A0C; color: #F2F2F0; font-family: 'Noto Sans KR', 'Space Grotesk', system-ui, sans-serif; position: relative; overflow: hidden; background-image: linear-gradient(#16161A 1px, transparent 1px), linear-gradient(90deg, #16161A 1px, transparent 1px); background-size: 64px 64px">
+
+  <header style="position: relative; z-index: 2; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px; padding: 20px clamp(16px, 4vw, 48px); border-bottom: 1px solid #1F1F25; background: rgba(10,10,12,.82)">
+    <div style="display: flex; align-items: center; gap: 12px">
+      <a href="Main.dc.html" aria-label="홈으로" style="width: 34px; height: 34px; border-radius: 9px; background: var(--ac); display: grid; place-items: center">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0A0A0C" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h10M4 12h16M4 17h7"></path></svg>
+      </a>
+      <span style="font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 18px; letter-spacing: -0.01em">SpecDrivenBuilder</span>
+      <span style="color: #3A3A42">/</span>
+      <span style="font-family: 'JetBrains Mono', monospace; font-size: 14px; color: #B4B4BC">my-spec-project</span>
+      <span style="padding: 4px 10px; border-radius: 99px; border: 1px solid #2E2E36; font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #DADAE0">v{{version}}</span>
+    </div>
+    <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 10px">
+      <span style="font-size: 13px; color: #8E8E98">{{changeSummary}}</span>
+      <button class="btn go" onClick="{{confirm}}" style="min-height: 44px; padding: 0 20px; border: 0; border-radius: 12px; background: var(--ac); color: #0A0A0C; font: 700 14px 'Noto Sans KR', sans-serif; display: inline-flex; align-items: center; gap: 8px">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"></path></svg>
+        확정하고 다운로드
+      </button>
+    </div>
+  </header>
+
+  <main style="position: relative; z-index: 1; max-width: 1400px; margin: 0 auto; padding: 24px clamp(16px, 3vw, 40px) 40px; display: flex; flex-wrap: wrap; gap: 18px; align-items: stretch">
+
+    <!-- 파일 탭 -->
+    <nav aria-label="산출물 파일" class="rise" style="flex: 1 1 220px; max-width: 100%; display: flex; flex-direction: column; gap: 6px">
+      <span style="padding: 0 6px 8px; font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #8E8E98; letter-spacing: .08em">FILES · 5</span>
+      <sc-for list="{{tabs}}" as="t" hint-placeholder-count="5">
+        <button class="btn ftab tab" onClick="{{t.pick}}" style="{{t.style}}">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="{{t.ic}}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"></path><path d="M14 3v5h5"></path></svg>
+          <span style="flex: 1; display: flex; flex-direction: column; gap: 2px; text-align: left">
+            <span style="font-family: 'JetBrains Mono', monospace; font-size: 13px; font-weight: 600">{{t.name}}</span>
+            <span style="font-size: 11px; color: #8E8E98">{{t.desc}}</span>
+          </span>
+          <sc-if value="{{t.changed}}" hint-placeholder-val="{{ false }}">
+            <span style="position: relative; width: 8px; height: 8px">
+              <span class="ping" style="position: absolute; inset: 0; border-radius: 50%; background: var(--ac)"></span>
+              <span style="position: absolute; inset: 0; border-radius: 50%; background: var(--ac)"></span>
+            </span>
+          </sc-if>
+        </button>
+      </sc-for>
+      <div style="margin-top: 14px; padding: 16px; border: 1px dashed #2A2A31; border-radius: 14px; font-size: 12.5px; line-height: 1.7; color: #A2A2AB">
+        줄을 클릭하면 그 줄을 콕 집어서 고쳐 달라고 할 수 있어요.
+      </div>
+    </nav>
+
+    <!-- 문서 뷰어 -->
+    <section aria-label="문서 미리보기" class="rise d1" style="flex: 999 1 520px; min-width: 0; border: 1px solid #23232A; border-radius: 22px; background: #0E0E11; display: flex; flex-direction: column; overflow: hidden; min-height: 820px">
+      <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 20px; border-bottom: 1px solid #1F1F25">
+        <div style="display: flex; align-items: center; gap: 10px">
+          <span style="font-family: 'JetBrains Mono', monospace; font-size: 14px; font-weight: 600">{{curName}}</span>
+          <span style="font-size: 12px; color: #8E8E98">{{lineCount}}줄</span>
+        </div>
+        <div role="group" aria-label="보기 방식" style="display: flex; padding: 3px; border-radius: 10px; background: #18181D">
+          <button class="btn" onClick="{{viewRead}}" style="{{readBtn}}">읽기</button>
+          <button class="btn" onClick="{{viewRaw}}" style="{{rawBtn}}">원문</button>
+        </div>
+      </div>
+
+      <sc-if value="{{hasPending}}" hint-placeholder-val="{{ false }}">
+        <div class="msg" style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 20px; background: #15180B; border-bottom: 1px solid #2E3A10">
+          <span style="display: flex; align-items: center; gap: 10px; font-size: 14px">
+            <span style="padding: 3px 9px; border-radius: 99px; background: var(--ac); color: #0A0A0C; font-size: 11px; font-weight: 700">제안</span>
+            {{pendingLabel}}
+          </span>
+          <div style="display: flex; gap: 8px">
+            <button class="btn ghost" onClick="{{reject}}" style="min-height: 40px; padding: 0 14px; border: 1.5px solid #2E2E36; border-radius: 10px; background: transparent; color: #F2F2F0; font: 500 13px 'Noto Sans KR', sans-serif">되돌리기</button>
+            <button class="btn go" onClick="{{accept}}" style="min-height: 40px; padding: 0 16px; border: 0; border-radius: 10px; background: var(--ac); color: #0A0A0C; font: 700 13px 'Noto Sans KR', sans-serif">적용</button>
+          </div>
+        </div>
+      </sc-if>
+
+      <div style="flex: 1; overflow: auto; padding: 18px 0 28px">
+        <sc-for list="{{lines}}" as="l" hint-placeholder-count="12">
+          <div class="ln" onClick="{{l.pick}}" style="{{l.row}}">
+            <span style="flex: none; width: 44px; padding-right: 14px; text-align: right; font-family: 'JetBrains Mono', monospace; font-size: 12px; color: {{l.numColor}}; user-select: none">{{l.num}}</span>
+            <span style="flex: none; width: 16px; font-family: 'JetBrains Mono', monospace; font-size: 13px; color: {{l.markColor}}">{{l.mark}}</span>
+            <span style="{{l.style}}">{{l.text}}</span>
+          </div>
+        </sc-for>
+      </div>
+    </section>
+
+    <!-- 수정 요청 -->
+    <aside aria-label="수정 요청" class="rise d2" style="flex: 1 1 340px; min-width: 0; border: 1px solid #23232A; border-radius: 22px; background: #0E0E11; display: flex; flex-direction: column; overflow: hidden; min-height: 820px">
+      <div style="padding: 16px 20px; border-bottom: 1px solid #1F1F25; display: flex; flex-direction: column; gap: 4px">
+        <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #8E8E98; letter-spacing: .08em">REVISE</span>
+        <span style="font-size: 17px; font-weight: 700">말로 고치기</span>
+      </div>
+
+      <div style="flex: 1; min-height: 280px; overflow-y: auto; display: flex; flex-direction: column-reverse; padding: 20px">
+        <div style="display: flex; flex-direction: column; gap: 12px">
+          <sc-for list="{{chat}}" as="m" hint-placeholder-count="2">
+            <sc-if value="{{m.bot}}" hint-placeholder-val="{{ true }}">
+              <div class="msg" style="max-width: 90%; padding: 12px 15px; border-radius: 4px 14px 14px 14px; background: #18181D; font-size: 14px; line-height: 1.65; white-space: pre-line">{{m.text}}</div>
+            </sc-if>
+            <sc-if value="{{m.me}}" hint-placeholder-val="{{ false }}">
+              <div class="msg" style="align-self: flex-end; max-width: 88%; display: flex; flex-direction: column; gap: 6px; align-items: flex-end">
+                <sc-if value="{{m.quote}}" hint-placeholder-val="{{ false }}">
+                  <span style="max-width: 100%; padding: 6px 10px; border-radius: 8px; border: 1px solid #2E2E36; font-family: 'JetBrains Mono', monospace; font-size: 11.5px; color: #A2A2AB; overflow: hidden; text-overflow: ellipsis; white-space: nowrap">{{m.quote}}</span>
+                </sc-if>
+                <span style="padding: 12px 15px; border-radius: 14px 4px 14px 14px; background: #F2F2F0; color: #0A0A0C; font-size: 14px; font-weight: 500; line-height: 1.55">{{m.text}}</span>
+              </div>
+            </sc-if>
+          </sc-for>
+          <sc-if value="{{typing}}" hint-placeholder-val="{{ false }}">
+            <div class="msg" aria-label="고치는 중" style="align-self: flex-start; display: flex; gap: 5px; padding: 15px 17px; border-radius: 4px 14px 14px 14px; background: #18181D"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
+          </sc-if>
+        </div>
+      </div>
+
+      <div style="border-top: 1px solid #1F1F25; padding: 16px 20px 20px; background: #0B0B0E; display: flex; flex-direction: column; gap: 10px">
+        <div style="display: flex; flex-wrap: wrap; gap: 6px">
+          <sc-for list="{{chips}}" as="c" hint-placeholder-count="3">
+            <button class="btn chip msg" onClick="{{c.pick}}" style="min-height: 40px; padding: 0 13px; border: 1px solid #2E2E36; border-radius: 999px; background: transparent; color: #DADAE0; font: 500 13px 'Noto Sans KR', sans-serif; animation-delay: {{c.delay}}">{{c.label}}</button>
+          </sc-for>
+        </div>
+        <sc-if value="{{hasSel}}" hint-placeholder-val="{{ false }}">
+          <div class="msg" style="display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 10px; background: #15180B; border: 1px solid #2E3A10">
+            <span style="flex: none; font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--ac)">L{{selNum}}</span>
+            <span style="flex: 1; min-width: 0; font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #DADAE0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap">{{selText}}</span>
+            <button class="btn" onClick="{{clearSel}}" aria-label="선택 해제" style="flex: none; width: 28px; height: 28px; border: 0; border-radius: 7px; background: transparent; color: #A2A2AB; display: grid; place-items: center">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg>
+            </button>
+          </div>
+        </sc-if>
+        <div class="field" style="display: flex; align-items: center; gap: 8px; padding: 6px 6px 6px 14px; border: 1.5px solid #2A2A31; border-radius: 14px; background: #111115; transition: border-color .2s">
+          <label for="req" style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">수정 요청</label>
+          <input id="req" value="{{req}}" onChange="{{onReq}}" onKeyDown="{{onReqKey}}" placeholder="{{reqPlaceholder}}" style="flex: 1; min-width: 0; min-height: 44px; border: 0; background: transparent; color: #F2F2F0; font: 400 14px 'Noto Sans KR', sans-serif">
+          <button class="btn" onClick="{{send}}" aria-label="보내기" style="flex: none; width: 44px; height: 44px; border: 0; border-radius: 10px; background: #F2F2F0; color: #0A0A0C; display: grid; place-items: center">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5M6 11l6-6 6 6"></path></svg>
+          </button>
+        </div>
+      </div>
+    </aside>
+  </main>
+
+  <sc-if value="{{confirmed}}" hint-placeholder-val="{{ false }}">
+    <div class="toast" role="status" style="position: absolute; left: 50%; bottom: 32px; z-index: 5; display: flex; align-items: center; gap: 14px; padding: 14px 16px 14px 18px; border-radius: 16px; background: #F2F2F0; color: #0A0A0C; width: min(520px, calc(100% - 32px))">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5L20 7"></path></svg>
+      <span style="flex: 1; display: flex; flex-direction: column; gap: 6px">
+        <span style="font-size: 14px; font-weight: 700">my-spec-project.zip (v{{version}}) 받는 중</span>
+        <span style="height: 4px; border-radius: 99px; background: #D6D6D2; overflow: hidden"><span class="sweep" style="display: block; height: 100%; background: #0A0A0C"></span></span>
+      </span>
+      <a href="Main.dc.html" style="flex: none; font-size: 13px; font-weight: 700; color: #0A0A0C">새 프로젝트</a>
+    </div>
+  </sc-if>
+</div>
+</x-dc>
+
+<script type="text/x-dc" data-dc-script data-props='{"accent":{"editor":"color","default":"#D4FF3A","options":["#D4FF3A","#FF6B2C","#7CC7FF","#F2F2F0"]},"$preview":{"width":1440,"height":980}}'>
+class Component extends DCLogic {
+  componentWillUnmount() { (this._t || []).forEach(clearTimeout); }
+  later(fn, ms) { this._t = this._t || []; this._t.push(setTimeout(fn, ms)); }
+
+  base() {
+    const L = (kind, t) => ({ kind, t });
+    return {
+      'spec.md': [
+        L('h1', '# 우리 동네 헬스장 PT 예약 앱'), L('b', ''),
+        L('h2', '## 개요'),
+        L('li', '- 사용자: 우리 팀·회사 사람들'), L('li', '- 환경: 둘 다 비슷하게 (PC 웹 + 휴대폰)'),
+        L('li', '- 위임 범위: 중요한 것만 물어보기'), L('b', ''),
+        L('h2', '## 필수 기능 (MVP)'),
+        L('li', '1. 트레이너별 빈 시간을 조회하고 예약을 생성한다'),
+        L('li', '2. 회원은 내 예약 목록을 보고 취소할 수 있다'), L('b', ''),
+        L('h2', '## 범위 밖'),
+        L('li', '- 결제, 회원권 판매'), L('b', ''),
+        L('h2', '## 수용 기준'),
+        L('chk', '- [ ] 예약 → 목록 확인 → 취소 흐름이 끝까지 동작한다'),
+        L('chk', '- [ ] 같은 시간대에 중복 예약이 생기지 않는다'),
+        L('chk', '- [ ] 작업자는 추가 질문 없이 구현한다')
+      ],
+      'AGENTS.md': [
+        L('h1', '# AGENTS.md'), L('b', ''),
+        L('p', '이 폴더의 spec.md 를 구현한다. 스펙에 없는 기능은 만들지 않는다.'), L('b', ''),
+        L('h2', '## 작업자 컨텍스트'),
+        L('li', '- 사용자는 비개발자다. 설명은 짧고 쉬운 말로.'),
+        L('li', '- 되돌릴 수 있는 기술 선택은 알아서 하고 한 줄로 알린다.'),
+        L('li', '- 데이터 삭제·외부 서비스 연결은 먼저 묻는다.'), L('b', ''),
+        L('h2', '## 작업 절차'),
+        L('li', '1. spec.md 를 읽고 계획을 plan.md 에 쓴다'),
+        L('li', '2. 기능 하나씩 구현하고 수용 기준으로 확인한다'),
+        L('li', '3. 끝나면 실행 방법을 README.md 에 적는다')
+      ],
+      'CLAUDE.md': [L('code', '@AGENTS.md')],
+      'SKILL.md': [
+        L('code', '---'), L('code', 'name: add-feature'), L('code', 'description: spec.md 에 기능을 하나 추가하고 구현한다'), L('code', '---'), L('b', ''),
+        L('h1', '# 기능 추가'),
+        L('li', '1. spec.md 의 필수 기능에 한 줄 추가'),
+        L('li', '2. 수용 기준 한 줄 추가'),
+        L('li', '3. 구현 후 기존 수용 기준이 깨지지 않았는지 확인')
+      ],
+      'run.json': [
+        L('code', '{'), L('code', '  "builder": "SpecDrivenBuilder",'), L('code', '  "created": "2026-11-14T12:00:00+09:00",'),
+        L('code', '  "answers": 4,'), L('code', '  "files": ["spec.md", "AGENTS.md", "CLAUDE.md", "SKILL.md"]'), L('code', '}')
+      ]
+    };
+  }
+
+  st() {
+    return Object.assign({ file: 'spec.md', docs: null, pending: null, sel: -1, req: '', typing: false, raw: false,
+      version: 1, changed: {}, edits: 0, confirmed: false,
+      chat: [{ bot: true, text: '산출물이 준비됐어요.\n읽어 보고 바꾸고 싶은 곳을 말해 주세요. 줄을 눌러서 콕 집어도 돼요.' }] }, this.state);
+  }
+
+  docs() { return this.st().docs || this.base(); }
+
+  // 시나리오별 변경안: 파일과, 그 파일의 새 줄 목록(st: add|del)
+  plan(key, text) {
+    const D = this.docs();
+    const s = this.st();
+    const mk = (arr) => arr.map((l) => ({ ...l, st: '' }));
+    if (key === 'notify') {
+      const a = mk(D['spec.md']);
+      const i = a.findIndex((l) => l.t.startsWith('2. '));
+      a.splice(i + 1, 0, { kind: 'li', t: '3. 예약이 생기거나 취소되면 트레이너에게 알림을 보낸다', st: 'add' });
+      const j = a.findIndex((l) => l.t.includes('작업자는 추가 질문'));
+      a.splice(j, 0, { kind: 'chk', t: '- [ ] 예약·취소 후 1분 안에 트레이너가 알림을 받는다', st: 'add' });
+      return { file: 'spec.md', lines: a, reply: 'spec.md 에 두 줄 추가했어요.\n필수 기능 3번과, 그걸 확인할 수용 기준이에요.', label: 'spec.md · 2줄 추가' };
+    }
+    if (key === 'easy') {
+      const a = mk(D['spec.md']);
+      const out = [];
+      a.forEach((l) => {
+        if (l.t.startsWith('1. 트레이너별')) { out.push({ ...l, st: 'del' }); out.push({ kind: 'li', t: '1. 트레이너의 남는 시간을 보고, 원하는 시간을 눌러 예약한다', st: 'add' }); }
+        else if (l.t.includes('중복 예약')) { out.push({ ...l, st: 'del' }); out.push({ kind: 'chk', t: '- [ ] 이미 찬 시간은 다른 사람이 예약할 수 없다', st: 'add' }); }
+        else out.push(l);
+      });
+      return { file: 'spec.md', lines: out, reply: '어려운 표현 두 곳을 쉬운 말로 바꿨어요.', label: 'spec.md · 2줄 변경' };
+    }
+    if (key === 'test') {
+      const a = mk(D['AGENTS.md']);
+      const i = a.findIndex((l) => l.t.startsWith('2. 기능 하나씩'));
+      a.splice(i, 1, { ...a[i], st: 'del' },
+        { kind: 'li', t: '2. 기능마다 수용 기준을 테스트로 먼저 쓰고, 통과하도록 구현한다', st: 'add' });
+      return { file: 'AGENTS.md', lines: a, reply: 'AGENTS.md 작업 절차를 고쳤어요.\n이제 작업자가 테스트부터 쓰고 구현해요.', label: 'AGENTS.md · 1줄 변경' };
+    }
+    // 직접 입력: 선택한 줄을 고치거나, 없으면 끝에 추가
+    const f = s.file;
+    const a = mk(D[f]);
+    if (s.sel >= 0 && a[s.sel]) {
+      const old = a[s.sel];
+      a.splice(s.sel, 1, { ...old, st: 'del' }, { kind: old.kind, t: old.t + ' (' + text + ')', st: 'add' });
+      return { file: f, lines: a, reply: f + ' ' + (s.sel + 1) + '번째 줄에 반영했어요.', label: f + ' · 1줄 변경' };
+    }
+    a.push({ kind: 'li', t: '- ' + text, st: 'add' });
+    return { file: f, lines: a, reply: f + ' 맨 끝에 한 줄로 추가했어요.\n위치를 바꾸려면 줄을 눌러 다시 말해 주세요.', label: f + ' · 1줄 추가' };
+  }
+
+  ask(key, text) {
+    const s = this.st();
+    if (s.typing || !text) return;
+    const quote = s.sel >= 0 && key === 'custom' ? 'L' + (s.sel + 1) + '  ' + (this.view()[s.sel] || {}).t : '';
+    this.setState({ typing: true, req: '', pending: null, chat: s.chat.concat([{ me: true, text, quote }]) });
+    this.later(() => {
+      const p = this.plan(key, text);
+      this.setState({ typing: false, file: p.file, pending: p, sel: -1, chat: this.st().chat.concat([{ bot: true, text: p.reply }]) });
+    }, 1000);
+  }
+
+  view() {
+    const s = this.st();
+    if (s.pending && s.pending.file === s.file) return s.pending.lines;
+    return this.docs()[s.file].map((l) => ({ ...l, st: '' }));
+  }
+
+  renderVals() {
+    const s = this.st();
+    const ac = this.props.accent ?? '#D4FF3A';
+    const D = this.docs();
+    const META = [
+      ['spec.md', '요구사항 스펙'], ['AGENTS.md', '작업자 규칙'], ['CLAUDE.md', '@AGENTS.md 임포트'],
+      ['SKILL.md', '반복 작업 스킬'], ['run.json', '생성 기록']
+    ];
+    const tabs = META.map(([name, desc], i) => {
+      const on = name === s.file;
+      return {
+        name, desc, changed: !!s.changed[name] || (s.pending && s.pending.file === name),
+        ic: on ? ac : '#6E6E78',
+        style: 'min-height: 56px; width: 100%; padding: 10px 12px; display: flex; align-items: center; gap: 12px; border-radius: 12px; color: #F2F2F0; font-family: inherit; animation-delay: ' + (i * 0.06) + 's; '
+          + (on ? 'background: #18181D; border: 1.5px solid ' + ac : 'background: transparent; border: 1.5px solid transparent'),
+        pick: () => this.setState({ file: name, sel: -1 })
+      };
+    });
+
+    const KIND = {
+      h1: 'font-family: Space Grotesk, Noto Sans KR, sans-serif; font-size: 26px; font-weight: 700; letter-spacing: -0.02em; color: #F2F2F0',
+      h2: 'font-size: 17px; font-weight: 700; color: ' + ac + '; padding-top: 4px',
+      li: 'font-size: 15px; color: #DADAE0',
+      chk: 'font-size: 15px; color: #DADAE0',
+      p: 'font-size: 15px; color: #B4B4BC',
+      code: 'font-family: JetBrains Mono, monospace; font-size: 14px; color: #DADAE0',
+      b: 'font-size: 15px'
+    };
+    const v = this.view();
+    const lines = v.map((l, i) => {
+      const sel = i === s.sel;
+      const bg = l.st === 'add' ? 'background: rgba(212,255,58,.10); box-shadow: inset 3px 0 0 ' + ac
+        : l.st === 'del' ? 'background: rgba(255,107,44,.09); box-shadow: inset 3px 0 0 #FF6B2C'
+        : sel ? 'background: #1A1A20; box-shadow: inset 3px 0 0 #F2F2F0' : '';
+      const base = s.raw ? 'font-family: JetBrains Mono, monospace; font-size: 13.5px; color: #DADAE0' : KIND[l.kind];
+      return {
+        num: i + 1, text: l.t || ' ',
+        mark: l.st === 'add' ? '+' : l.st === 'del' ? '−' : '',
+        markColor: l.st === 'add' ? ac : '#FF8A57',
+        numColor: sel ? '#F2F2F0' : '#4E4E58',
+        row: 'display: flex; align-items: baseline; padding: 5px 22px 5px 0; min-height: 30px; line-height: 1.7; animation-delay: ' + Math.min(i * 0.025, 0.5) + 's; ' + bg,
+        style: 'flex: 1; min-width: 0; white-space: pre-wrap; word-break: keep-all; ' + base + (l.st === 'del' ? '; text-decoration: line-through; opacity: .6' : ''),
+        pick: () => this.setState({ sel: sel ? -1 : i })
+      };
+    });
+
+    const hasPending = !!(s.pending && s.pending.file === s.file);
+    const editsN = Object.keys(s.changed).length;
+    const chipDefs = [
+      ['notify', '예약되면 트레이너에게 알림 추가'],
+      ['easy', '더 쉬운 말로 바꿔 줘'],
+      ['test', '작업자가 테스트부터 쓰게 해 줘']
+    ];
+    const set = (k) => (e) => this.setState({ [k]: e.target.value });
+    const selLine = s.sel >= 0 ? v[s.sel] : null;
+
+    return {
+      accent: ac, version: s.version,
+      changeSummary: editsN ? editsN + '개 파일 수정됨' : '아직 수정 없음',
+      tabs, lines, curName: s.file, lineCount: v.length,
+      readBtn: 'min-height: 34px; padding: 0 14px; border: 0; border-radius: 8px; font: 500 13px Noto Sans KR, sans-serif; ' + (s.raw ? 'background: transparent; color: #A2A2AB' : 'background: #F2F2F0; color: #0A0A0C'),
+      rawBtn: 'min-height: 34px; padding: 0 14px; border: 0; border-radius: 8px; font: 500 13px Noto Sans KR, sans-serif; ' + (s.raw ? 'background: #F2F2F0; color: #0A0A0C' : 'background: transparent; color: #A2A2AB'),
+      viewRead: () => this.setState({ raw: false }), viewRaw: () => this.setState({ raw: true }),
+      hasPending, pendingLabel: s.pending ? s.pending.label : '',
+      accept: () => {
+        const p = this.st().pending; if (!p) return;
+        const next = Object.assign({}, this.docs());
+        next[p.file] = p.lines.filter((l) => l.st !== 'del').map((l) => ({ kind: l.kind, t: l.t }));
+        const changed = Object.assign({}, this.st().changed, { [p.file]: true });
+        this.setState({ docs: next, pending: null, changed, version: this.st().version + 1,
+          chat: this.st().chat.concat([{ bot: true, text: '적용했어요. 이제 v' + (this.st().version + 1) + ' 이에요.' }]) });
+      },
+      reject: () => this.setState({ pending: null, chat: this.st().chat.concat([{ bot: true, text: '되돌렸어요. 원래 내용 그대로예요.' }]) }),
+      chat: s.chat.map((m) => ({ bot: !!m.bot, me: !!m.me, text: m.text, quote: m.quote || '' })),
+      typing: s.typing,
+      chips: chipDefs.map(([k, label], i) => ({ label, delay: (i * 0.07) + 's', pick: () => this.ask(k, label) })),
+      hasSel: !!selLine, selNum: s.sel + 1, selText: selLine ? (selLine.t || '(빈 줄)') : '',
+      clearSel: () => this.setState({ sel: -1 }),
+      req: s.req, onReq: set('req'),
+      reqPlaceholder: selLine ? '이 줄을 어떻게 바꿀까요?' : '예: 범위 밖에 채팅 기능도 넣어 줘',
+      onReqKey: (e) => { if (e.key === 'Enter' && !e.nativeEvent?.isComposing) this.ask('custom', (this.st().req || '').trim()); },
+      send: () => this.ask('custom', (this.st().req || '').trim()),
+      confirmed: s.confirmed,
+      confirm: () => this.setState({ confirmed: true })
+    };
+  }
+}
+</script>
+</body>
+</html>
