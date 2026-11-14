@@ -134,6 +134,19 @@ LLM 호출 수: design.md 대로 "질문 묶음 하나당 1회" + 마지막 답 
 - 품질 회귀 세트(`evals/cases/`)에 화면 없는 요청이 없다. 위 텔레그램 요청을 넣을지 결정 필요 — 이번 범위 밖이라 추가하지 않음.
 - 확인 화면에서 기능 항목만 고쳐 프로그램이 "화면 있음 ↔ 없음" 으로 바뀌는 경우는 다시 판정하지 않는다 (`screen` 항목이 남아 있으면 지나감). 확인 화면에서 `screen` 은 작업자 항목이라 고칠 수 없다.
 
+### develop 머지 후 (C·D·G, `756c514`) — develop-2 세션 지시
+
+- [확정] `git merge origin/develop` 충돌 없음 (`fake_llm.py`·`test_graph.py`·`design.md` 자동 병합).
+- D 의 남은 일 반영: 확인 화면에서 고친 디자인 항목(아직 모름 + 문답 기록에 지난 답)을 `interview_design.reopened_ids` 로 판정해
+  LLM 입력에 "사용자가 고치기로 고른 디자인 항목" 으로 알리고, LLM 이 지난 답으로 다시 채운 갱신은 버린다 (D 의 `e0d7623` 과 같은 방식, `interview_user.py` 는 그대로).
+  미리보기의 "색을/배치를 바꿀래요" 로 되돌린 항목도 같은 판정에 걸린다. LLM 호출 수는 그대로.
+- `test_graph.py` 고치기 테스트의 호출 순서: 첫 지나감에만 `interview_design`(화면 판정) — 돌아올 때는 `screen` 항목이 있어 LLM 없이 지나감.
+- 품질 회귀 세트에 `evals/cases/04-no-screen.md` (텔레그램 날씨 알림) 추가 — 승인받음.
+- [확정] `uv sync` 후 `uv run pytest -q` → **183 passed, 1 failed** — `tests/test_main.py::test_cli_revise_then_confirm_writes_artifacts` 가
+  `meta["llm_calls"] == 9` 를 기대하는데 10 (interview_design 의 화면 판정 1회). 계획 밖 파일이라 고치지 않음 — 9 → 10 한 줄이면 된다.
+- [확정] `ruff check .` 통과, `ruff format --check .` 71 files already formatted.
+- [확정] `npm run gen:types` 재생성 결과 diff 없음. `npm run lint` 오류 없음, `npm run test` 21 passed, `npm run build` 성공.
+
 ### 토큰 소모
 
 - [추정] 세션 약 25~30만 토큰 (문서·코드 읽기 + 구현 + 실제 모델 실행 대화). 실제 모델 실행 3회 = `claude -p` 약 14회 호출 (요금제 내).
