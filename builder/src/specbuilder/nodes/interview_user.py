@@ -28,17 +28,36 @@ NEXT = "interview_design"
 MAX_ROUNDS = 5
 
 
+def reopened_ids(items: list, qa: list) -> set[str]:
+    """확인 화면에서 사용자가 고치기로 고른 항목 — 아직 모름인데 지난 답이 있다.
+
+    답을 받은 항목은 확정·맡김이 되고 LLM 은 그 상태를 아직 모름으로 되돌릴 수 없으므로(merge_updates), 이 조합은 confirm_spec 만 만든다.
+    """
+    answered = {line["item_id"] for line in qa}
+    return {
+        item["id"] for item in items if is_open(item, AREA) and item["id"] in answered
+    }
+
+
 def render_context(state: State) -> str:
-    """요청 원문·현재 스펙 항목·지난 문답을 LLM 입력용 데이터 블록으로 만든다 (지시문 없음 — 지시는 prompts/ 에)."""
+    """요청 원문·결정 위임 범위·현재 스펙 항목·지난 문답을 LLM 입력용 데이터 블록으로 만든다 (지시문 없음 — 지시는 prompts/ 에)."""
+    profile = state["profile"]
     lines = [
         "## 요청 원문",
         state["request"].strip(),
         "",
+        # 위임 범위가 "누가 정하는가"(decided_by)의 경계를 옮긴다 (docs/design/design.md "interview_user").
+        "## 결정 위임 범위",
+        (profile["delegation"] or "(모름)") if profile else "(모름)",
+        "",
         "## 현재 스펙 항목",
         json.dumps(state["spec_items"], ensure_ascii=False, indent=2),
         "",
-        "## 지금까지의 질문과 답",
     ]
+    reopened = reopened_ids(state["spec_items"], state["qa"])
+    if reopened:
+        lines += ["## 사용자가 고치기로 고른 항목", ", ".join(sorted(reopened)), ""]
+    lines += ["## 지금까지의 질문과 답"]
     if not state["qa"]:
         lines.append("(없음)")
     for i, qa in enumerate(state["qa"], 1):
@@ -46,11 +65,13 @@ def render_context(state: State) -> str:
     return "\n".join(lines)
 
 
-def _parse_reply(text: str, items: list) -> tuple[list, list]:
+def _parse_reply(text: str, items: list, reopened: set[str]) -> tuple[list, list]:
     try:
         reply = interview_reply_adapter.validate_python(parse_json_reply(text))
     except ValidationError as e:
         raise LLMCallError(f"{NODE} 응답이 규격에 맞지 않음: {e}") from e
+    # 사용자가 고치겠다고 고른 항목을 LLM 이 지난 답으로 다시 채우면 고치기가 조용히 무시된다 — 다시 묻게 아직 모름으로 둔다.
+    reply["items"] = [i for i in reply["items"] if i["id"] not in reopened]
     for item in reply["items"]:
         if item["area"] != AREA:
             raise LLMCallError(f"{NODE} 는 {AREA} 항목만 다룬다: {item['id']}")
@@ -128,7 +149,9 @@ def make_interview_user(llm: LLMClient):
             return Command(goto=NEXT)
 
         items, questions = _parse_reply(
-            llm.complete(system, render_context(state), schema), items
+            llm.complete(system, render_context(state), schema),
+            items,
+            reopened_ids(items, state["qa"]),
         )
         if not needs_asking(items, AREA):
             return _stop(items, "resolved", rounds)

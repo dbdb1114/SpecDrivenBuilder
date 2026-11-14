@@ -99,6 +99,12 @@ def test_start_returns_question_bundle(two_questions):
     assert client.get(f"/api/runs/{view['run_id']}").json() == view
 
 
+def confirm_and_finish(client, run_id: str, view: dict) -> dict:
+    """답을 다 내면 confirm_spec 이 확인 화면에서 멈춘다 — 확인을 보내 산출물까지 간다."""
+    assert view["status"] == "confirm"
+    return client.post(f"/api/runs/{run_id}/confirm", json={"action": "confirm"}).json()
+
+
 def test_submit_answers_then_download_artifacts(two_questions):
     client, llm = two_questions
     run_id = client.post("/api/runs", json={"request": "가계부"}).json()["run_id"]
@@ -113,9 +119,16 @@ def test_submit_answers_then_download_artifacts(two_questions):
             ],
         },
     ).json()
+    view = confirm_and_finish(client, run_id, view)
 
     assert view["status"] == "done"
-    assert set(view["artifacts"]) == {"spec.md", "SKILL.md", "AGENTS.md", "CLAUDE.md"}
+    assert set(view["artifacts"]) == {
+        "spec.md",
+        "AGENTS.md",
+        "CLAUDE.md",
+        ".claude/skills/build-ledger/SKILL.md",
+        ".agents/skills/build-ledger/SKILL.md",
+    }
     assert "저 혼자요" in llm.calls_for("generate_artifacts")[0]
 
     response = client.get(f"/api/runs/{run_id}/artifacts.zip")
@@ -131,6 +144,7 @@ def test_finish_skips_remaining_questions(two_questions):
     view = client.post(
         f"/api/runs/{run_id}/answers", json={"action": "finish", "answers": []}
     ).json()
+    view = confirm_and_finish(client, run_id, view)
 
     assert view["status"] == "done"
     assert len(llm.calls_for("interview_user")) == 1
@@ -158,7 +172,7 @@ def test_bad_answers_are_rejected_and_run_stays_answerable(two_questions, answer
     good = client.post(
         f"/api/runs/{run_id}/answers", json={"action": "submit", "answers": []}
     )
-    assert good.json()["status"] == "done"
+    assert confirm_and_finish(client, run_id, good.json())["status"] == "done"
 
 
 def test_unknown_run_is_404(two_questions):

@@ -3,6 +3,7 @@ from pathlib import Path
 
 BUILDER_ROOT = Path(__file__).resolve().parents[2]
 PROMPTS_DIR = BUILDER_ROOT / "prompts"
+TEMPLATES_DIR = BUILDER_ROOT / "templates"
 OUTPUT_DIR = BUILDER_ROOT / "output"
 CHECKPOINT_DB = BUILDER_ROOT / ".checkpoints.sqlite"
 

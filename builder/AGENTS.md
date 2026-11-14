@@ -13,7 +13,7 @@ src/specbuilder/     코드 패키지 (src 레이아웃 — graph·state·llm �
   api/               FastAPI 라우터 (`/api/**`) — 그래프를 HTTP 로 노출만 함, 로직 없음
   paths.py           builder/ 기준 데이터 디렉토리 경로
 prompts/      노드별 시스템 프롬프트 (.md) — 코드에 하드코딩 금지
-templates/    산출물 템플릿 (SKILL.md, AGENTS.md, spec.md)
+templates/    산출물 템플릿 — SKILL.md(새로 쓰는 스킬의 서식), skills/<이름>/SKILL.md(공통 스킬. 폴더가 곧 목록)
 output/       생성 결과 — git 추적 안 함
 tests/        nodes/ 와 1:1 대응. fakes/fake_llm.py
 evals/        품질 회귀 세트 — cases/ 에 비개발자식 요청 원문 (루트 "품질 판정")
