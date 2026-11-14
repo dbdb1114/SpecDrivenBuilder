@@ -40,7 +40,13 @@ def test_full_graph_bundle_interrupt_resume_then_generate():
         config,
     )
 
-    assert set(final["artifacts"]) == {"spec.md", "SKILL.md", "AGENTS.md", "CLAUDE.md"}
+    assert set(final["artifacts"]) == {
+        "spec.md",
+        "AGENTS.md",
+        "CLAUDE.md",
+        ".claude/skills/build-ledger/SKILL.md",
+        ".agents/skills/build-ledger/SKILL.md",
+    }
     assert final["interview_stops"] == [
         {"node": "interview_user", "reason": "resolved", "rounds": 1}
     ]
@@ -58,6 +64,7 @@ def test_full_graph_bundle_interrupt_resume_then_generate():
         "interview_user",
         "interview_user",
         "select_stack",
+        "select_skills",
         "generate_artifacts",
     ]
 

@@ -115,7 +115,13 @@ def test_submit_answers_then_download_artifacts(two_questions):
     ).json()
 
     assert view["status"] == "done"
-    assert set(view["artifacts"]) == {"spec.md", "SKILL.md", "AGENTS.md", "CLAUDE.md"}
+    assert set(view["artifacts"]) == {
+        "spec.md",
+        "AGENTS.md",
+        "CLAUDE.md",
+        ".claude/skills/build-ledger/SKILL.md",
+        ".agents/skills/build-ledger/SKILL.md",
+    }
     assert "저 혼자요" in llm.calls_for("generate_artifacts")[0]
 
     response = client.get(f"/api/runs/{run_id}/artifacts.zip")
