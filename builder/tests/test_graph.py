@@ -57,6 +57,7 @@ def test_full_graph_bundle_interrupt_resume_then_generate():
     assert [n for n, _, _ in llm.calls] == [
         "interview_user",
         "interview_user",
+        "interview_design",
         "select_stack",
         "generate_artifacts",
     ]
