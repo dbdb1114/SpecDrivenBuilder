@@ -143,6 +143,22 @@ describe("StudioPage — 질문 묶음", () => {
     expect(onSubmit).toHaveBeenCalledWith({ action: "submit", answers: [{ question_id: "q1", kind: "delegate" }] });
   });
 
+  it("선택지 없는 질문은 입력 칸과 고정 선택지만 보여 주고 적은 답을 보낸다", async () => {
+    const open = { id: "q1", item_id: "location", text: "어느 동네인가요?", multiple: false, options: [] };
+    const { user, onSubmit } = setup(view({ bundle: { ...BUNDLE, questions: [open] } }));
+
+    const delegate = screen.getByRole("button", { name: new RegExp(DELEGATE_LABEL) });
+    expect(within(delegate.closest("ol")!).getAllByRole("button")).toHaveLength(1);
+
+    await user.type(screen.getByPlaceholderText("답을 적어 주세요"), "서울 마포구");
+    await user.click(screen.getByRole("button", { name: "보내기" }));
+
+    expect(onSubmit).toHaveBeenCalledWith({
+      action: "submit",
+      answers: [{ question_id: "q1", kind: "custom", text: "서울 마포구" }],
+    });
+  });
+
   it("그만 묻기는 지금까지 답한 것만 담아 finish 로 보낸다", async () => {
     const { user, onSubmit } = setup(view({ bundle: BUNDLE }));
 
