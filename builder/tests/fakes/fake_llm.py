@@ -8,10 +8,24 @@ def files_reply(**overrides: str) -> str:
     """generate_artifacts 가 기대하는 구분선 형식의 응답을 만든다."""
     files = {
         "spec.md": "# 스펙\n\n가계부 프로그램.",
-        "SKILL.md": "---\nname: build-ledger\ndescription: 가계부를 만들 때 쓴다\n---\n\n1. 화면을 만든다.",
         "AGENTS.md": "# AGENTS\n\n## 용어사전\n",
+        "skills/build-ledger.md": "# 가계부 만들기\n\n1. 화면을 만든다.",
     } | overrides
     return "\n".join(f"=== FILE: {name} ===\n{body}" for name, body in files.items())
+
+
+def skill(
+    name: str = "build-ledger",
+    source: str = "new",
+    when: str = "가계부를 만들 때 쓴다",
+    basis: tuple[str, ...] = ("purpose",),
+) -> dict:
+    return {"name": name, "when": when, "source": source, "basis": list(basis)}
+
+
+def skills_reply(*skills: dict) -> str:
+    """select_skills 가 기대하는 JSON 응답을 만든다. 비우면 새로 쓰는 스킬 하나."""
+    return json.dumps({"skills": list(skills) or [skill()]}, ensure_ascii=False)
 
 
 def interview_reply(
@@ -60,6 +74,7 @@ DEFAULT_REPLIES = {
     "interview_user": lambda: interview_reply(
         [item("purpose", content="혼자 쓰는 가계부")]
     ),
+    "select_skills": skills_reply,
     "generate_artifacts": files_reply,
 }
 
