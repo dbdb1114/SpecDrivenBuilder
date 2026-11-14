@@ -51,6 +51,34 @@ def test_draft_option_limits(options):
         interview_reply_adapter.validate_python(reply)
 
 
+def test_question_without_options_is_open_question():
+    """답이 이름·장소·숫자인 질문은 선택지 없이 직접 입력만 받는다 (선택지를 강제하면 LLM 이 답이 아닌 선택지를 지어낸다)."""
+    draft = {
+        "item_id": "location",
+        "text": "어느 동네인가요?",
+        "multiple": True,
+        "options": [],
+    }
+    reply = interview_reply_adapter.validate_python({"items": [], "questions": [draft]})
+    bundle = assign_ids(reply["questions"], round=1, can_finish=True)
+    asked = bundle["questions"][0]
+    assert asked["options"] == []
+    assert asked["multiple"] is False
+
+    items = [item("location")]
+    custom = {"question_id": "q1", "kind": "custom", "text": "서울 마포구"}
+    submission = validate_submission(bundle, {"action": "submit", "answers": [custom]})
+    updated, qa = apply_submission(
+        items, bundle, submission, "interview_user", "function"
+    )
+    assert (updated[0]["status"], updated[0]["content"]) == ("confirmed", "서울 마포구")
+    assert qa[0]["answer"] == "서울 마포구"
+
+    picked = {"question_id": "q1", "kind": "option", "option_ids": ["o1"]}
+    with pytest.raises(ValueError):
+        validate_submission(bundle, {"action": "submit", "answers": [picked]})
+
+
 def test_bundle_question_count_limits():
     bundle = make_bundle()
     with pytest.raises(ValidationError):

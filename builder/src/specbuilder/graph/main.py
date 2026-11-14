@@ -67,7 +67,8 @@ def parse_answer(question: dict, line: str) -> dict | None:
             }
         return {"question_id": question["id"], "kind": "delegate"}
     parts = [p.strip() for p in line.replace(" ", "").split(",")]
-    if not all(p.isdigit() for p in parts):
+    # 선택지 없는 질문은 번호를 고를 일이 없다 — "5" 같은 숫자도 답이다.
+    if not options or not all(p.isdigit() for p in parts):
         return {"question_id": question["id"], "kind": "custom", "text": line}
     numbers = [int(p) for p in parts]
     if numbers == [delegate_no]:
@@ -98,8 +99,11 @@ def ask_bundle(raw: object) -> dict:
         for n, option in enumerate(question["options"], 1):
             mark = " (추천)" if option["recommended"] else ""
             print(f"  {n}. {option['label']}{mark}")
-        print(f"  {len(question['options']) + 1}. {DELEGATE_LABEL}")
-        print("  (직접 입력해도 돼요. 빈 줄이면 추천)")
+        if question["options"]:
+            print(f"  {len(question['options']) + 1}. {DELEGATE_LABEL}")
+            print("  (직접 입력해도 돼요. 빈 줄이면 추천)")
+        else:
+            print(f"  (답을 적어 주세요. 빈 줄이면 '{DELEGATE_LABEL}')")
         while True:
             line = read_line()
             if bundle["can_finish"] and line == FINISH_WORD:
