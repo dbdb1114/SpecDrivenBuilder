@@ -127,8 +127,12 @@ def test_revise_on_confirm_screen_asks_again_then_generates():
     assert [qa["answer"] for qa in final["qa"]] == ["저 혼자요", "가족이 같이 써요"]
     assert [s["reason"] for s in final["interview_stops"]] == ["resolved", "resolved"]
     # confirm_spec 은 LLM 을 부르지 않는다. 답이 바뀌면 select_stack 부터 다시 지나온다
+    # interview_design 은 첫 진입에만 화면 유무를 판정한다 (돌아올 때는 screen 항목이 있어 LLM 없이 지나감)
     one_pass = ["interview_user", "interview_user", "select_stack", "select_skills"]
-    assert [n for n, _, _ in llm.calls] == one_pass * 2 + ["generate_artifacts"]
+    first_pass = one_pass[:2] + ["interview_design"] + one_pass[2:]
+    assert [n for n, _, _ in llm.calls] == first_pass + one_pass + [
+        "generate_artifacts"
+    ]
 
 
 def test_profile_asked_once_then_reused_on_next_run(profile_file):
