@@ -7,7 +7,12 @@ TypedDict + pydantic TypeAdapter 로 정의한다 — 값이 plain dict 라 Stat
 
 from typing import Annotated, Literal, NotRequired, TypedDict, get_args
 
-from pydantic import AfterValidator, Field, StringConstraints, TypeAdapter
+from pydantic import (
+    AfterValidator,
+    Field,
+    StringConstraints,
+    TypeAdapter,
+)
 
 from specbuilder.state.spec_items import (
     Area,
@@ -49,14 +54,35 @@ class LayoutVisual(TypedDict):
 Visual = Annotated[PaletteVisual | LayoutVisual, Field(discriminator="type")]
 
 
+class PreviewColors(TypedDict):
+    """역할 이름이 붙은 색 — 프론트엔드가 "몇 번째 색이 무엇인지" 추측하지 않는다.
+
+    surface·text 는 LLM 이 아니라 빌더 코드가 다른 색에서 계산한다 (바탕 위 글자 대비를 코드가 보장).
+    """
+
+    background: HexColor
+    surface: HexColor
+    primary: HexColor
+    accent: HexColor
+    text: HexColor
+
+
+class PreviewItem(TypedDict):
+    title: NonEmpty
+    detail: NonEmpty
+
+
 class PreviewTexts(TypedDict):
     title: NonEmpty
     menu: list[NonEmpty]
+    heading: NonEmpty
+    action: NonEmpty
+    items: Annotated[list[PreviewItem], Field(min_length=2, max_length=5)]
 
 
 class Preview(TypedDict):
     layout: LayoutKey
-    colors: Annotated[list[HexColor], Field(min_length=1)]
+    colors: PreviewColors
     texts: PreviewTexts
 
 

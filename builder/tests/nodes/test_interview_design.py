@@ -7,14 +7,40 @@ from langgraph.types import Command
 from specbuilder.common_items import fixed_questions, load_common_items
 from specbuilder.graph.build import build_graph
 from specbuilder.llm import LLMCallError
-from specbuilder.nodes.interview_design import make_interview_design
+from specbuilder.nodes.interview_design import (
+    contrast,
+    make_interview_design,
+    role_colors,
+)
 from specbuilder.state import initial_state
 from specbuilder.state.question_format import LAYOUT_KEYS, assign_ids
 from tests.fakes.fake_llm import FakeLLM, interview_reply, item
 
 NAVY = ["#1E3A5F", "#F5F7FA", "#4A90D9"]
 BEIGE = ["#5C4033", "#FAF6F0", "#D9A05B"]
-TEXTS = {"title": "동아리 모임", "menu": ["모임 날짜", "회비"]}
+TEXTS = {
+    "title": "동아리 모임",
+    "menu": ["모임 날짜", "회비"],
+    "heading": "다가오는 모임",
+    "action": "모임 만들기",
+    "items": [
+        {"title": "11월 정기 모임", "detail": "11월 20일 · 7명"},
+        {"title": "송년회", "detail": "12월 18일 · 12명"},
+    ],
+}
+
+
+def roles(colors):
+    return dict(zip(("primary", "background", "accent"), colors))
+
+
+def tone(label, colors):
+    """_describe 가 쓰는 색 톤 항목 내용."""
+    c = role_colors(list(colors))
+    return (
+        f"{label} (주색 {c['primary']}, 바탕 {c['background']}, "
+        f"강조 {c['accent']}, 면 {c['surface']}, 글자 {c['text']})"
+    )
 
 
 def design(id, status="unknown", content="", decided_by="user"):
@@ -56,8 +82,8 @@ def design_reply(items=None, questions=None, preview=None):
     return json.dumps({**data, "preview": preview}, ensure_ascii=False)
 
 
-def draft_preview(layout="top-nav", colors=("#000000",)):
-    return {"layout": layout, "colors": list(colors), "texts": TEXTS}
+def draft_preview(layout="top-nav", colors=("#000000", "#FFFFFF", "#FF0000")):
+    return {"layout": layout, "colors": roles(colors), "texts": TEXTS}
 
 
 def state_with(items, **extra):
@@ -218,7 +244,7 @@ def test_answers_keep_chosen_colors_and_layout_key_and_delegate_uses_recommended
     assert by_id["color-tone"] == {
         **by_id["color-tone"],
         "status": "confirmed",
-        "content": f"따뜻한 베이지 ({', '.join(BEIGE)})",
+        "content": tone("따뜻한 베이지", BEIGE),
     }
     assert by_id["layout"] == {
         **by_id["layout"],
@@ -230,7 +256,7 @@ def test_answers_keep_chosen_colors_and_layout_key_and_delegate_uses_recommended
 
 def test_preview_bundle_uses_user_choices_over_llm_draft():
     items = [
-        design("color-tone", "confirmed", f"차분한 남색 ({', '.join(NAVY)})"),
+        design("color-tone", "confirmed", tone("차분한 남색", NAVY)),
         design("layout", "confirmed", "아래 탭 [mobile-tabs]"),
     ]
     result, _ = run(
@@ -240,7 +266,7 @@ def test_preview_bundle_uses_user_choices_over_llm_draft():
     bundle = result.update["pending_bundle"]
     assert bundle["preview"] == {
         "layout": "mobile-tabs",
-        "colors": NAVY,
+        "colors": role_colors(NAVY),
         "texts": TEXTS,
     }
     q = bundle["questions"][0]
@@ -266,7 +292,48 @@ def test_preview_falls_back_to_llm_values_for_custom_answers():
     )
 
     assert result.update["pending_bundle"]["preview"]["layout"] == "top-nav"
-    assert result.update["pending_bundle"]["preview"]["colors"] == BEIGE
+    assert result.update["pending_bundle"]["preview"]["colors"] == role_colors(BEIGE)
+
+
+@pytest.mark.parametrize(
+    "colors",
+    [
+        NAVY,
+        BEIGE,
+        ["#E0E0E0", "#121212", "#BB86FC"],  # 어두운 바탕
+        ["#777777", "#808080", "#FF0000"],  # 주색이 바탕 위에서 안 읽히는 중간 회색
+        ["#FFFF00", "#FFFFFF", "#FFFF00"],
+    ],
+)
+def test_role_colors_keep_picked_and_make_text_readable(colors):
+    c = role_colors(colors)
+    assert (c["primary"], c["background"], c["accent"]) == tuple(colors)
+    assert contrast(c["text"], c["background"]) >= 4.5
+    assert contrast(c["text"], c["surface"]) >= 4.5
+    # 본문은 제목(주색)과 구분된다.
+    assert c["text"] != c["primary"]
+
+
+def test_role_colors_fill_missing_background_and_accent():
+    c = role_colors(["#123456"])
+    assert c["background"] == "#FFFFFF" and c["accent"] == "#123456"
+
+
+def test_preview_ignores_llm_surface_and_text_and_reads_old_tone_content():
+    """LLM 이 면·글자색을 써 넣어도 코드가 계산한 값을 쓴다. 옛 내용("남색 (#주, #바탕, #강조)")도 순서로 읽는다."""
+    items = [
+        design("color-tone", "confirmed", f"차분한 남색 ({', '.join(NAVY)})"),
+        design("layout", "confirmed", "아래 탭 [mobile-tabs]"),
+    ]
+    draft = draft_preview()
+    draft["colors"] |= {"surface": "#FFFFFF", "text": "#FFFFFF"}
+    result, _ = run([design_reply([], [], draft)], state_with(items, question_round=1))
+
+    bundle = result.update["pending_bundle"]
+    assert bundle["preview"]["colors"] == role_colors(NAVY)
+    assert bundle["questions"][0]["text"] == (
+        "이 느낌이 맞나요? (배치: 아래 탭 / 색: 차분한 남색)"
+    )
 
 
 def test_missing_preview_draft_is_an_error():
@@ -313,7 +380,7 @@ def test_change_color_reasks_only_color_then_previews_again():
         0
     ].value
     assert (
-        bundle["preview"]["colors"] == NAVY
+        bundle["preview"]["colors"] == role_colors(NAVY)
         and bundle["preview"]["layout"] == "mobile-tabs"
     )
 
@@ -327,7 +394,7 @@ def test_change_color_reasks_only_color_then_previews_again():
         0
     ].value  # 베이지
     assert (
-        bundle["preview"]["colors"] == BEIGE
+        bundle["preview"]["colors"] == role_colors(BEIGE)
         and bundle["preview"]["layout"] == "mobile-tabs"
     )
 
@@ -340,7 +407,7 @@ def test_change_color_reasks_only_color_then_previews_again():
     final = graph.invoke(Command(resume={"action": "confirm"}), config)
     by_id = {i["id"]: i for i in final["spec_items"]}
     assert by_id["preview-check"]["status"] == "confirmed"
-    assert by_id["color-tone"]["content"] == f"따뜻한 베이지 ({', '.join(BEIGE)})"
+    assert by_id["color-tone"]["content"] == tone("따뜻한 베이지", BEIGE)
     assert {"node": "interview_design", "reason": "resolved", "rounds": 4} in final[
         "interview_stops"
     ]
@@ -423,7 +490,7 @@ def test_reopened_item_is_asked_again_even_if_llm_reconfirms_it():
         },
     ]
     reply = design_reply(
-        [design("color-tone", "confirmed", f"차분한 남색 ({', '.join(NAVY)})")],
+        [design("color-tone", "confirmed", tone("차분한 남색", NAVY))],
         [color_question()],
     )
     result, llm = run([reply], state_with(items, qa=qa))
@@ -509,10 +576,10 @@ def test_revise_design_item_on_confirm_screen_asks_it_again():
     assert again["preview"] is None
 
     preview = pick(("q1", "o2"))  # 베이지 → 미리보기 다시
-    assert preview["preview"]["colors"] == BEIGE
+    assert preview["preview"]["colors"] == role_colors(BEIGE)
     screen = pick(("q1", "o1"))  # 맞아요 → 확인 화면
     by_id = {i["id"]: i for i in screen["items"]}
-    assert by_id["color-tone"]["content"] == f"따뜻한 베이지 ({', '.join(BEIGE)})"
+    assert by_id["color-tone"]["content"] == tone("따뜻한 베이지", BEIGE)
     assert by_id["preview-check"]["status"] == "confirmed"
 
 
@@ -566,7 +633,7 @@ def test_design_context_lists_design_common_items_only():
 
 def test_preview_bundle_keeps_preview_first_then_fixed_question():
     items = [
-        design("color-tone", "confirmed", f"차분한 남색 ({', '.join(NAVY)})"),
+        design("color-tone", "confirmed", tone("차분한 남색", NAVY)),
         design("layout", "confirmed", "아래 탭 [mobile-tabs]"),
         design("text-size"),
     ]

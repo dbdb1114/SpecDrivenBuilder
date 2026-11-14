@@ -22,7 +22,11 @@ from specbuilder.state.question_format import (
     LAYOUT_KEYS,
     MAX_QUESTIONS,
     DraftQuestion,
+    HexColor,
+    LayoutKey,
     Preview,
+    PreviewColors,
+    PreviewTexts,
     apply_submission,
     assign_ids,
     validate_submission,
@@ -57,16 +61,30 @@ HEX = re.compile(r"#[0-9A-Fa-f]{6}")
 LAYOUT_TAG = re.compile(r"\[([a-z-]+)\]")
 
 
+class DraftPreviewColors(TypedDict):
+    primary: HexColor
+    background: HexColor
+    accent: HexColor
+
+
+class DraftPreview(TypedDict):
+    """LLM 이 쓰는 미리보기 초안. 면·글자색은 코드가 계산하므로 받지 않는다 — LLM 이 써 넣어도 검증에서 버려진다."""
+
+    layout: LayoutKey
+    colors: DraftPreviewColors
+    texts: PreviewTexts
+
+
 class DesignReply(TypedDict):
     """이 노드의 LLM 응답. 질문 묶음 규격이 아니라 LLM 과 주고받는 형식이라 규격 모듈이 아니라 여기에 둔다.
 
-    InterviewReply 에 미리보기 초안이 더해진다 — 제목·메뉴 문구는 스펙 항목을 읽어야 나오므로 LLM 이 쓴다.
+    InterviewReply 에 미리보기 초안이 더해진다 — 틀을 채울 문구는 스펙 항목을 읽어야 나오므로 LLM 이 쓴다.
     이 프로그램에 해당하는 공통 항목 id 도 고른다 (interview_user.UserReply 와 같다).
     """
 
     items: list[SpecItem]
     questions: Annotated[list[DraftQuestion], Field(max_length=MAX_QUESTIONS)]
-    preview: NotRequired[Preview | None]
+    preview: NotRequired[DraftPreview | None]
     common_items: NotRequired[list[ItemId]]
 
 
@@ -124,7 +142,7 @@ def _render_context(state: State, catalog: dict[str, CommonItem]) -> str:
 
 def _parse_reply(
     text: str, items: list, reopened: set[str], catalog: dict[str, CommonItem]
-) -> tuple[list, list, Preview | None]:
+) -> tuple[list, list, DraftPreview | None]:
     try:
         reply = design_reply_adapter.validate_python(parse_json_reply(text))
     except ValidationError as e:
@@ -181,11 +199,80 @@ def _check_questions(questions: list, items: list, catalog: dict) -> list:
     return questions
 
 
+def _channels(color: str) -> tuple[int, int, int]:
+    return tuple(int(color[i : i + 2], 16) for i in (1, 3, 5))
+
+
+def _mix(color: str, other: str, ratio: float) -> str:
+    """color 에 other 를 ratio 만큼 섞는다."""
+    pairs = zip(_channels(color), _channels(other))
+    return "#" + "".join(f"{round(a + (b - a) * ratio):02X}" for a, b in pairs)
+
+
+def _luminance(color: str) -> float:
+    # WCAG 2 상대 휘도.
+    linear = [
+        c / 12.92 if c <= 0.04045 else ((c + 0.055) / 1.055) ** 2.4
+        for c in (v / 255 for v in _channels(color))
+    ]
+    return 0.2126 * linear[0] + 0.7152 * linear[1] + 0.0722 * linear[2]
+
+
+def contrast(a: str, b: str) -> float:
+    """두 색의 WCAG 대비 (1~21)."""
+    high, low = sorted((_luminance(a), _luminance(b)), reverse=True)
+    return (high + 0.05) / (low + 0.05)
+
+
+WHITE, BLACK = "#FFFFFF", "#000000"
+# 본문 글자는 바탕·면 둘 다에 대해 이 대비를 노린다 (WCAG AAA). 못 닿으면 검정/흰색 — 그때도 4.5 (AA) 이상이다.
+# 주색을 40% 이상 섞어 시작한다 — 본문이 제목(주색)과 같은 색이면 둘이 구분되지 않는다.
+TEXT_CONTRAST = 7.0
+MIN_CONTRAST = 4.5
+
+
+def role_colors(colors: list[str]) -> PreviewColors:
+    """[주색, 바탕색, 강조색] 에 역할 이름을 붙이고 면·글자색을 계산한다.
+
+    색이 모자라면 바탕은 흰색, 강조는 주색으로 채운다. 면은 바탕을 조금 밝게, 글자는 주색 기운을 남긴 채
+    바탕·면 위에서 읽히는 대비가 될 때까지 검정(밝은 바탕) 또는 흰색(어두운 바탕) 쪽으로 섞는다.
+    """
+    primary = colors[0]
+    background = colors[1] if len(colors) > 1 else WHITE
+    accent = colors[2] if len(colors) > 2 else primary
+    # 휘도 0.179 에서 흰색·검정과의 대비가 같아진다 — 그보다 밝으면 어두운 글자가 더 잘 읽힌다.
+    light = _luminance(background) > 0.179
+    target = BLACK if light else WHITE
+    surface = _mix(background, WHITE, 0.6 if light else 0.06)
+    if contrast(target, surface) < MIN_CONTRAST:
+        surface = background
+    text = next(
+        (
+            candidate
+            for candidate in (_mix(primary, target, i / 10) for i in range(4, 11))
+            if min(contrast(candidate, background), contrast(candidate, surface))
+            >= TEXT_CONTRAST
+        ),
+        target,
+    )
+    return {
+        "background": background,
+        "surface": surface,
+        "primary": primary,
+        "accent": accent,
+        "text": text,
+    }
+
+
 def _describe(option: dict) -> str:
     """선택지를 스펙 항목 내용으로 — 고른 색 값·배치 key 를 함께 남겨 미리보기와 작업자가 그대로 쓴다."""
     visual = option["visual"]
     if visual["type"] == "palette":
-        return f"{option['label']} ({', '.join(visual['colors'])})"
+        c = role_colors(visual["colors"])
+        return (
+            f"{option['label']} (주색 {c['primary']}, 바탕 {c['background']}, "
+            f"강조 {c['accent']}, 면 {c['surface']}, 글자 {c['text']})"
+        )
     return f"{option['label']} [{visual['key']}]"
 
 
@@ -235,7 +322,7 @@ def _reopen_preview(items: list) -> list:
     return list(by_id.values())
 
 
-def _build_preview(items: list, draft: Preview | None) -> Preview | None:
+def _build_preview(items: list, draft: DraftPreview | None) -> Preview | None:
     by_id = {item["id"]: item for item in items}
     color, layout = by_id.get(COLOR_ITEM_ID), by_id.get(LAYOUT_ITEM_ID)
     check = by_id.get(PREVIEW_ITEM_ID)
@@ -250,20 +337,26 @@ def _build_preview(items: list, draft: Preview | None) -> Preview | None:
     if draft is None:
         raise LLMCallError(f"{NODE}: 색 톤과 배치가 정해졌는데 미리보기 초안이 없음")
     # 사용자가 고른 값이 LLM 의 초안보다 우선이다. 직접 입력한 답이라 값이 없을 때만 LLM 이 고른 값을 쓴다.
-    colors = HEX.findall(color["content"]) or draft["colors"]
+    # _describe 는 주색·바탕·강조를 앞에 쓰므로 앞의 세 값만 읽으면 된다 (면·글자는 다시 계산해도 같다).
+    drafted = draft["colors"]
+    picked = HEX.findall(color["content"])[:3] or [
+        drafted["primary"],
+        drafted["background"],
+        drafted["accent"],
+    ]
     tag = LAYOUT_TAG.search(layout["content"])
     key = tag.group(1) if tag and tag.group(1) in LAYOUT_KEYS else draft["layout"]
     try:
         return preview_adapter.validate_python(
-            {**draft, "layout": key, "colors": colors}
+            {**draft, "layout": key, "colors": role_colors(picked)}
         )
     except ValidationError as e:
         raise LLMCallError(f"{NODE} 미리보기가 규격에 맞지 않음: {e}") from e
 
 
 def _plain(content: str) -> str:
-    """_describe 가 붙인 "(#색, …)"·"[key]" 를 떼어 사용자에게 보일 말만 남긴다."""
-    content = re.sub(r"\s*\((#[0-9A-Fa-f]{6}(,\s*)?)+\)", "", content)
+    """_describe 가 붙인 "(주색 #색, …)"·"[key]" 를 떼어 사용자에게 보일 말만 남긴다."""
+    content = re.sub(r"\s*\([^()]*#[0-9A-Fa-f]{6}[^()]*\)", "", content)
     return LAYOUT_TAG.sub("", content).strip()
 
 
