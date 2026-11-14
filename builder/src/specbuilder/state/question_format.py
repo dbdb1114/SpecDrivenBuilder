@@ -18,6 +18,7 @@ from specbuilder.state.spec_items import (
 )
 
 MAX_QUESTIONS = 10
+# 선택지는 0개(직접 입력만 받는 질문) 또는 2~4개. 1개는 고를 것이 없으므로 받지 않는다.
 MIN_OPTIONS, MAX_OPTIONS = 2, 4
 # 레이아웃 종류 목록 (2026-11-14 결정, 작업 단위 F). 원본은 여기 하나 — Literal 이라 OpenAPI enum 으로 나가고
 # 프론트엔드는 생성 타입으로 받는다. key 를 추가하면 프론트엔드 틀이 없을 때 타입 검사가 실패한다.
@@ -67,7 +68,10 @@ class Option(TypedDict):
     visual: Visual | None
 
 
-def _at_most_one_recommended(options: list) -> list:
+def _check_options(options: list) -> list:
+    # 답이 이름·장소·숫자인 질문에 선택지를 강제하면 LLM 이 "직접 적어 주세요" 같은 답이 아닌 선택지를 지어낸다 — 빈 목록을 허용한다.
+    if options and len(options) < MIN_OPTIONS:
+        raise ValueError(f"선택지는 0개 또는 {MIN_OPTIONS}~{MAX_OPTIONS}개")
     # 초안(DraftOption)은 recommended 를 생략할 수 있어 .get 으로 읽는다.
     if sum(1 for o in options if o.get("recommended", False)) > 1:
         raise ValueError("recommended 선택지는 질문당 최대 1개")
@@ -76,8 +80,8 @@ def _at_most_one_recommended(options: list) -> list:
 
 Options = Annotated[
     list[Option],
-    Field(min_length=MIN_OPTIONS, max_length=MAX_OPTIONS),
-    AfterValidator(_at_most_one_recommended),
+    Field(max_length=MAX_OPTIONS),
+    AfterValidator(_check_options),
 ]
 
 
@@ -107,8 +111,8 @@ class DraftOption(TypedDict):
 
 DraftOptions = Annotated[
     list[DraftOption],
-    Field(min_length=MIN_OPTIONS, max_length=MAX_OPTIONS),
-    AfterValidator(_at_most_one_recommended),
+    Field(max_length=MAX_OPTIONS),
+    AfterValidator(_check_options),
 ]
 
 
@@ -135,7 +139,8 @@ def assign_ids(
                 "id": f"q{qi}",
                 "item_id": draft["item_id"],
                 "text": draft["text"],
-                "multiple": draft.get("multiple", False),
+                # 고를 것이 없는 질문에 "여러 개 고르기"는 뜻이 없다.
+                "multiple": bool(draft["options"]) and draft.get("multiple", False),
                 "options": [
                     {
                         "id": f"o{oi}",
