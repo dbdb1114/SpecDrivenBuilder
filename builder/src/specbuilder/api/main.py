@@ -18,7 +18,7 @@ from pydantic import ValidationError
 
 from specbuilder.api.schemas import RunView, StartRun
 from specbuilder.graph.build import build_graph
-from specbuilder.llm import ClaudeCLIClient, LLMCallError
+from specbuilder.llm import LLMCallError, make_client
 from specbuilder.paths import CHECKPOINT_DB
 from specbuilder.state import AnswerSubmission, initial_state
 from specbuilder.state.question_format import ConfirmReply, validate_submission
@@ -88,7 +88,7 @@ def create_app(graph=None) -> FastAPI:
             yield
         else:
             with SqliteSaver.from_conn_string(str(CHECKPOINT_DB)) as checkpointer:
-                app.state.graph = build_graph(ClaudeCLIClient(), checkpointer)
+                app.state.graph = build_graph(make_client(), checkpointer)
                 yield
 
     app = FastAPI(

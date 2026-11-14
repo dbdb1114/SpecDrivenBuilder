@@ -60,7 +60,7 @@ def test_cli_revise_then_confirm_writes_artifacts(monkeypatch, tmp_path):
             ]
         }
     )
-    monkeypatch.setattr(cli, "ClaudeCLIClient", lambda: llm)
+    monkeypatch.setattr(cli, "make_client", lambda: llm)
     # 묶음 답 → 확인 화면에서 1번 고치기 → 다시 묻는 묶음 답 → 확인
     monkeypatch.setattr("sys.stdin", io.StringIO("저 혼자요\n1\n가족이 같이 써요\n\n"))
     request = tmp_path / "case.md"
