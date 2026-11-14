@@ -4,7 +4,7 @@ import pytest
 
 from specbuilder.llm import LLMCallError
 from specbuilder.nodes.select_stack import make_select_stack
-from specbuilder.registry.refs import parse_refs
+from specbuilder.registry.refs import parse_parts, parse_refs
 from specbuilder.state import initial_state
 from tests.fakes.fake_llm import FakeLLM, item, package, stack_reply, tech
 
@@ -29,6 +29,11 @@ def test_writes_tech_items_with_versions_and_goes_to_verify():
     assert framework.startswith("선택: Next.js\n")
     assert "이유: 혼자 쓰는 가계부라서" in framework
     assert [r.label for r in parse_refs(framework)] == ["next@16.4.6", "react@19.2.0"]
+    assert "부분: 화면" in framework.splitlines()
+    assert parse_parts(framework) == ["frontend"]
+    # 런타임처럼 여러 부분이 같이 쓰는 항목은 부분 줄이 없다.
+    assert parse_parts(tech_items[0]["content"]) == []
+    assert "부분:" not in tech_items[0]["content"]
     assert result.update["stack_mismatches"] == []
     assert result.update["verify_returns"] == 0
     assert len(llm.calls_for("select_stack")) == 1
@@ -186,3 +191,20 @@ def test_requests_json_schema():
     assert schema["type"] == "object" and {"items", "missing"} <= set(
         schema["properties"]
     )
+
+
+def test_parts_line_dedupes_and_keeps_order():
+    reply = stack_reply(
+        [tech("app", choice="FastAPI", parts=("backend", "database", "backend"))]
+    )
+    result = make_select_stack(FakeLLM({"select_stack": [reply]}))(_state())
+    (app,) = [i for i in result.update["spec_items"] if i["area"] == "tech"]
+
+    assert "부분: 서버, 데이터베이스" in app["content"].splitlines()
+    assert parse_parts(app["content"]) == ["backend", "database"]
+
+
+def test_rejects_unknown_part():
+    reply = stack_reply([tech("app", parts=("mobile",))])
+    with pytest.raises(LLMCallError, match="규격"):
+        make_select_stack(FakeLLM({"select_stack": [reply]}))(_state())

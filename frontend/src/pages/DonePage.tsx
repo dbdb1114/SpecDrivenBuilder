@@ -6,9 +6,9 @@ import styles from "./DonePage.module.css";
 const FOLDER = "my-project";
 
 function describe(name: string): string {
-  if (name === "spec.md") return "기획 스펙";
-  if (name === "AGENTS.md") return "작업자 규칙";
-  if (name === "CLAUDE.md") return "Claude Code 연결";
+  if (name === "docs/spec.md") return "기획 스펙";
+  if (name.endsWith("AGENTS.md")) return "작업자 규칙";
+  if (name.endsWith("CLAUDE.md")) return "Claude Code 연결";
   if (name.endsWith("SKILL.md")) return "스킬";
   return "";
 }
@@ -27,7 +27,7 @@ export function DonePage({ runId, artifacts, onRestart }: Props) {
   const steps = [
     { title: "압축을 풀고 폴더로 이동", code: `unzip ${zipName} -d ${FOLDER} && cd ${FOLDER}` },
     { title: "Claude Code 실행 (Codex 를 쓰면 codex)", code: "claude" },
-    { title: "이렇게 한 마디만", code: '"spec.md 대로 만들어줘"' },
+    { title: "이렇게 한 마디만", code: '"docs/spec.md 대로 만들어줘"' },
   ];
 
   const copy = async (index: number, text: string) => {
@@ -41,7 +41,7 @@ export function DonePage({ runId, artifacts, onRestart }: Props) {
     timer.current = window.setTimeout(() => setCopied(null), 1500);
   };
 
-  const specLines = (artifacts["spec.md"] ?? "").split("\n").slice(0, 40);
+  const specLines = (artifacts["docs/spec.md"] ?? "").split("\n").slice(0, 40);
 
   return (
     <main className={styles.main}>
@@ -117,7 +117,7 @@ export function DonePage({ runId, artifacts, onRestart }: Props) {
           ))}
         </ul>
         {specLines.length > 1 && (
-          <div className={styles.preview} aria-label="spec.md 앞부분">
+          <div className={styles.preview} aria-label="docs/spec.md 앞부분">
             {specLines.map((line, i) => (
               <div key={i} className={line.startsWith("#") ? styles.heading : undefined}>
                 {line || "\u00a0"}

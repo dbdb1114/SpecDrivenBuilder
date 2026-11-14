@@ -3,12 +3,20 @@ import json
 from specbuilder.llm import LLMCallError
 from specbuilder.paths import PROMPTS_DIR
 
+FOLDER_AGENTS = "# 화면\n\n## 구조\n\n## 명령어\n\n## 코드 규칙\n\n## 하지 말 것\n"
+
 
 def files_reply(**overrides: str) -> str:
-    """generate_artifacts 가 기대하는 구분선 형식의 응답을 만든다."""
+    """generate_artifacts 가 기대하는 구분선 형식의 응답을 만든다. 폴더 세 개를 다 담는다 — 요구하지 않은 파일은 노드가 버린다."""
     files = {
-        "spec.md": "# 스펙\n\n가계부 프로그램.",
-        "AGENTS.md": "# AGENTS\n\n## 용어사전\n",
+        "docs/spec.md": "# 스펙\n\n가계부 프로그램.",
+        "AGENTS.md": (
+            "# AGENTS\n\n## 용어사전\n\n## 구조\n\n"
+            "docs/spec.md\nfrontend/\nbackend/\ndatabase/\n"
+        ),
+        "frontend/AGENTS.md": FOLDER_AGENTS,
+        "backend/AGENTS.md": FOLDER_AGENTS,
+        "database/AGENTS.md": FOLDER_AGENTS,
         "skills/build-ledger.md": "# 가계부 만들기\n\n1. 화면을 만든다.",
     } | overrides
     return "\n".join(f"=== FILE: {name} ===\n{body}" for name, body in files.items())
@@ -74,13 +82,19 @@ def package(registry: str, name: str, version: str) -> dict:
     return {"registry": registry, "name": name, "version": version}
 
 
-def tech(id: str, packages: list[dict] | None = None, choice: str = "고른 것") -> dict:
+def tech(
+    id: str,
+    packages: list[dict] | None = None,
+    choice: str = "고른 것",
+    parts: tuple[str, ...] = (),
+) -> dict:
     return {
         "id": id,
         "name": f"{id} 결정",
         "choice": choice,
         "reason": "혼자 쓰는 가계부라서",
         "packages": packages or [],
+        "parts": list(parts),
     }
 
 
@@ -95,6 +109,7 @@ def stack_reply(
                 "web-framework",
                 [package("npm", "next", "16.4.6"), package("npm", "react", "19.2.0")],
                 "Next.js",
+                ("frontend",),
             ),
         ]
     return json.dumps(

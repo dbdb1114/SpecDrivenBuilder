@@ -1,0 +1,34 @@
+# 스크립트만
+.agents/skills/build-ledger/SKILL.md
+.agents/skills/verify-before-report/SKILL.md
+.claude/skills/build-ledger/SKILL.md
+.claude/skills/verify-before-report/SKILL.md
+AGENTS.md
+CLAUDE.md  = '@AGENTS.md\n'
+docs/spec.md
+
+# 화면만
+.agents/skills/build-ledger/SKILL.md
+.agents/skills/verify-before-report/SKILL.md
+.claude/skills/build-ledger/SKILL.md
+.claude/skills/verify-before-report/SKILL.md
+AGENTS.md
+CLAUDE.md  = '@AGENTS.md\n'
+docs/spec.md
+frontend/AGENTS.md
+frontend/CLAUDE.md  = '@AGENTS.md\n'
+
+# 화면+서버+데이터베이스
+.agents/skills/build-ledger/SKILL.md
+.agents/skills/verify-before-report/SKILL.md
+.claude/skills/build-ledger/SKILL.md
+.claude/skills/verify-before-report/SKILL.md
+AGENTS.md
+CLAUDE.md  = '@AGENTS.md\n'
+backend/AGENTS.md
+backend/CLAUDE.md  = '@AGENTS.md\n'
+database/AGENTS.md
+database/CLAUDE.md  = '@AGENTS.md\n'
+docs/spec.md
+frontend/AGENTS.md
+frontend/CLAUDE.md  = '@AGENTS.md\n'
