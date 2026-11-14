@@ -5,7 +5,7 @@ TypedDict + pydantic TypeAdapter 로 정의한다 — 값이 plain dict 라 Stat
 같은 정의로 pydantic 이 검증하고 FastAPI 가 OpenAPI 스키마를 만든다.
 """
 
-from typing import Annotated, Literal, NotRequired, TypedDict
+from typing import Annotated, Literal, NotRequired, TypedDict, get_args
 
 from pydantic import AfterValidator, Field, StringConstraints, TypeAdapter
 
@@ -19,21 +19,21 @@ from specbuilder.state.spec_items import (
 
 MAX_QUESTIONS = 10
 MIN_OPTIONS, MAX_OPTIONS = 2, 4
-# 레이아웃 종류 목록은 interview_design(F) 이 정한다. 그때 이 상수만 바꾼다.
-LAYOUT_KEYS = ("sidebar-left",)
+# 레이아웃 종류 목록 (2026-11-14 결정, 작업 단위 F). 원본은 여기 하나 — Literal 이라 OpenAPI enum 으로 나가고
+# 프론트엔드는 생성 타입으로 받는다. key 를 추가하면 프론트엔드 틀이 없을 때 타입 검사가 실패한다.
+LayoutKey = Literal[
+    "single-column",
+    "top-nav",
+    "sidebar-left",
+    "list-detail",
+    "dashboard",
+    "mobile-tabs",
+]
+LAYOUT_KEYS = get_args(LayoutKey)
 # CLI·프론트엔드가 항상 같은 문구로 붙이는 고정 선택지. options 에는 넣지 않는다.
 DELEGATE_LABEL = "알아서 정해 주세요"
 
 HexColor = Annotated[str, StringConstraints(pattern=r"^#[0-9A-Fa-f]{6}$")]
-
-
-def _known_layout(key: str) -> str:
-    if key not in LAYOUT_KEYS:
-        raise ValueError(f"목록에 없는 layout key: {key!r} (허용: {LAYOUT_KEYS})")
-    return key
-
-
-LayoutKey = Annotated[str, AfterValidator(_known_layout)]
 
 
 class PaletteVisual(TypedDict):
