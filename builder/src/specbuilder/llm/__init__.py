@@ -3,6 +3,7 @@ from specbuilder.llm.client import (
     ClaudeCLIClient,
     LLMCallError,
     LLMClient,
+    for_node,
     make_client,
     parse_json_reply,
 )
@@ -12,6 +13,7 @@ __all__ = [
     "ClaudeCLIClient",
     "LLMCallError",
     "LLMClient",
+    "for_node",
     "make_client",
     "parse_json_reply",
 ]

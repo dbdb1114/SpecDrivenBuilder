@@ -1,7 +1,7 @@
 from langgraph.checkpoint.base import BaseCheckpointSaver
 from langgraph.graph import END, START, StateGraph
 
-from specbuilder.llm import LLMClient
+from specbuilder.llm import LLMClient, for_node
 from specbuilder.nodes.confirm_spec import confirm_spec
 from specbuilder.nodes.generate_artifacts import make_generate_artifacts
 from specbuilder.nodes.interview_design import make_interview_design
@@ -20,33 +20,35 @@ def build_graph(llm: LLMClient, checkpointer: BaseCheckpointSaver):
     # 각 작업 단위는 자기 노드 파일의 goto 만 바꾸면 된다 — 이 파일을 고치지 않는다.
     builder.add_node(
         "interview_profile",
-        make_interview_profile(llm),
+        make_interview_profile(for_node(llm, "interview_profile")),
         destinations=("interview_profile", "interview_user"),
     )
     builder.add_node(
         "interview_user",
-        make_interview_user(llm),
+        make_interview_user(for_node(llm, "interview_user")),
         destinations=("interview_user", "interview_design"),
     )
     builder.add_node(
         "interview_design",
-        make_interview_design(llm),
+        make_interview_design(for_node(llm, "interview_design")),
         destinations=("interview_design", "select_stack"),
     )
     # 돌아가는 경로 1: 부족한 정보가 있으면 interview_user 로
     builder.add_node(
         "select_stack",
-        make_select_stack(llm),
+        make_select_stack(for_node(llm, "select_stack")),
         destinations=("verify_stack", "interview_user"),
     )
     # 돌아가는 경로 2: 버전이 맞지 않으면 select_stack 으로
     builder.add_node(
         "verify_stack",
-        make_verify_stack(llm),
+        make_verify_stack(for_node(llm, "verify_stack")),
         destinations=("select_skills", "select_stack"),
     )
     builder.add_node(
-        "select_skills", make_select_skills(llm), destinations=("confirm_spec",)
+        "select_skills",
+        make_select_skills(for_node(llm, "select_skills")),
+        destinations=("confirm_spec",),
     )
     # 돌아가는 경로 3: 사용자가 고칠 항목을 고르면 interview_user 로
     builder.add_node(
@@ -54,7 +56,10 @@ def build_graph(llm: LLMClient, checkpointer: BaseCheckpointSaver):
         confirm_spec,
         destinations=("generate_artifacts", "interview_user"),
     )
-    builder.add_node("generate_artifacts", make_generate_artifacts(llm))
+    builder.add_node(
+        "generate_artifacts",
+        make_generate_artifacts(for_node(llm, "generate_artifacts")),
+    )
     builder.add_edge(START, "interview_profile")
     builder.add_edge("generate_artifacts", END)
     return builder.compile(checkpointer=checkpointer)
