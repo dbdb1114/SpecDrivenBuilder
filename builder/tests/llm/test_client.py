@@ -10,6 +10,7 @@ from specbuilder.llm.client import (
     ClaudeCLIClient,
     LLMCallError,
     _strict_schema,
+    for_node,
     make_client,
 )
 
@@ -46,6 +47,27 @@ def message(text="답", stop_reason="end_turn"):
     return SimpleNamespace(content=blocks, stop_reason=stop_reason)
 
 
+def test_api_client_logs_token_usage(caplog):
+    reply = message()
+    reply.usage = SimpleNamespace(
+        input_tokens=12,
+        output_tokens=34,
+        cache_creation_input_tokens=None,
+        cache_read_input_tokens=2100,
+    )
+    client = AnthropicAPIClient(model="claude-sonnet-5-5", client=FakeAnthropic(reply))
+
+    with caplog.at_level("INFO", logger="specbuilder.llm.client"):
+        for_node(client, "select_stack").complete("시스템", "입력")
+        client.complete("시스템", "입력")
+
+    first, second = caplog.messages
+    assert "node=select_stack" in first
+    assert "input=12 output=34 cache_write=0 cache_read=2100" in first
+    # 노드 이름은 그 호출 동안만 남는다.
+    assert "node=-" in second
+
+
 def api_error(cls, status):
     response = httpx2.Response(
         status, request=httpx2.Request("POST", "https://api.anthropic.com/v1/messages")
@@ -78,7 +100,10 @@ def test_api_client_sends_system_prompt_and_returns_text_only():
 
     request = fake.requests[0]
     assert request["model"] == "claude-opus-5-5"
-    assert request["system"] == "시스템"
+    # 노드 프롬프트는 호출마다 같아서 캐시 표시를 붙여 보낸다.
+    assert request["system"] == [
+        {"type": "text", "text": "시스템", "cache_control": {"type": "ephemeral"}}
+    ]
     assert request["messages"] == [{"role": "user", "content": "입력"}]
     assert "format" not in request["output_config"]
 

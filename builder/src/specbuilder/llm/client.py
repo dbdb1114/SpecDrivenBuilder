@@ -1,11 +1,16 @@
+import contextvars
 import json
+import logging
 import os
 import re
 import subprocess
 import tempfile
+import time
 from typing import Protocol
 
 import anthropic
+
+from specbuilder.llm import trace
 
 DEFAULT_MODEL = "claude-sonnet-5-5"
 # 어떤 클라이언트로 호출할지 고르는 환경 변수. 비우면 claude-cli.
@@ -17,6 +22,12 @@ API_EFFORT = "medium"
 # 안전 분류기가 요청을 거절했을 때 서버가 다른 모델로 같은 요청을 다시 돌리게 하는 기능을 지원하는 모델.
 API_FALLBACK_MODELS = frozenset({"claude-opus-5-5", "claude-sonnet-5-5"})
 API_FALLBACK_BETA = "server-side-fallback-2026-07-01"
+
+logger = logging.getLogger(__name__)
+# 지금 호출하는 노드 이름. 클라이언트는 누가 부르는지 모르므로 for_node 가 호출 동안만 적어 둔다 (사용량 줄에 쓴다).
+_node = contextvars.ContextVar("llm_node", default="-")
+# 방금 끝난 호출의 사용량. 감싼 클라이언트가 적어 두면 for_node 의 껍데기가 호출 기록에 싣는다.
+_usage = contextvars.ContextVar("llm_usage", default=None)
 
 
 class LLMCallError(Exception):
@@ -81,6 +92,16 @@ class ClaudeCLIClient:
             raise LLMCallError(
                 f"claude -p 출력이 JSON 이 아님: {proc.stdout[:200]}"
             ) from e
+        usage = data.get("usage") or {}
+        if usage:
+            _usage.set(
+                {
+                    "input": usage.get("input_tokens", 0),
+                    "output": usage.get("output_tokens", 0),
+                    "cache_write": usage.get("cache_creation_input_tokens", 0),
+                    "cache_read": usage.get("cache_read_input_tokens", 0),
+                }
+            )
         if data.get("is_error"):
             raise LLMCallError(f"claude -p 오류 응답: {data.get('result')}")
         if schema is not None:
@@ -117,12 +138,21 @@ class AnthropicAPIClient:
         params = {
             "model": self.model,
             "max_tokens": API_MAX_TOKENS,
-            "system": system,
+            # 노드 프롬프트는 호출마다 같다 — 캐시 표시를 붙이면 5분 안의 다음 호출부터 이 부분을 싸게 읽는다.
+            # 캐시는 앞부분이 글자 하나까지 같아야 맞으므로 system 에는 바뀌는 값을 넣지 않는다 (바뀌는 것은 전부 prompt 로).
+            "system": [
+                {
+                    "type": "text",
+                    "text": system,
+                    "cache_control": {"type": "ephemeral"},
+                }
+            ],
             "messages": [{"role": "user", "content": prompt}],
             "output_config": output_config,
         }
         if self.model in API_FALLBACK_MODELS:
             params |= {"betas": [API_FALLBACK_BETA], "fallbacks": "default"}
+        started = time.monotonic()
         try:
             # 긴 출력은 스트리밍으로 받아야 중간에 연결이 끊기지 않는다. 조각은 쓰지 않고 완성된 메시지만 꺼낸다.
             with self._client.beta.messages.stream(**params) as stream:
@@ -139,6 +169,7 @@ class AnthropicAPIClient:
             ) from e
         except anthropic.APIConnectionError as e:
             raise LLMCallError(f"Claude API 연결 실패: {e}") from e
+        _log_usage(self.model, message, time.monotonic() - started)
         if message.stop_reason == "refusal":
             raise LLMCallError("Claude API 가 요청을 거절함 (stop_reason: refusal)")
         if message.stop_reason == "max_tokens":
@@ -151,12 +182,76 @@ class AnthropicAPIClient:
         return text
 
 
+def _log_usage(model: str, message: object, seconds: float) -> None:
+    """호출 한 번의 토큰 사용량을 남긴다 — 어디서 비용이 나가는지, 캐시가 맞았는지는 이 숫자로만 알 수 있다."""
+    raw = getattr(message, "usage", None)
+    if raw is None:
+        return
+    usage = {
+        "input": raw.input_tokens,
+        "output": raw.output_tokens,
+        # 캐시를 쓰지 않은 호출에서는 SDK 가 None 을 준다.
+        "cache_write": raw.cache_creation_input_tokens or 0,
+        "cache_read": raw.cache_read_input_tokens or 0,
+    }
+    _usage.set(usage)
+    logger.info(
+        "llm usage node=%s model=%s input=%s output=%s cache_write=%s cache_read=%s seconds=%.1f",
+        _node.get(),
+        model,
+        *usage.values(),
+        seconds,
+    )
+
+
+class _NodeClient:
+    """호출하는 동안 노드 이름을 적어 두는 얇은 껍데기. 나머지는 감싼 클라이언트 그대로다."""
+
+    def __init__(self, inner: LLMClient, node: str):
+        self._inner = inner
+        self._node_name = node
+        self.model = inner.model
+
+    def complete(self, system: str, prompt: str, schema: dict | None = None) -> str:
+        token = _node.set(self._node_name)
+        _usage.set(None)
+        started = time.monotonic()
+        call = {"node": self._node_name, "model": self.model}
+        try:
+            call["response"] = self._inner.complete(system, prompt, schema)
+            return call["response"]
+        except LLMCallError as e:
+            call["error"] = str(e)
+            raise
+        finally:
+            _node.reset(token)
+            # 기록은 SPECBUILDER_TRACE 가 켜져 있을 때만 남는다 (llm/trace.py).
+            trace.record(
+                call
+                | {
+                    "seconds": round(time.monotonic() - started, 1),
+                    "usage": _usage.get(),
+                    "system": system,
+                    "prompt": prompt,
+                }
+            )
+
+
+def for_node(llm: LLMClient, node: str) -> LLMClient:
+    """사용량 줄에 노드 이름이 찍히도록 클라이언트를 감싼다 (graph/build.py 가 노드마다 쓴다)."""
+    return _NodeClient(llm, node)
+
+
 def make_client() -> LLMClient:
     """환경 변수 `SPECBUILDER_LLM` 으로 클라이언트를 고른다. 비우면 `claude -p` (요금제 안에서 돈다)."""
     kind = os.environ.get(LLM_ENV) or "claude-cli"
     if kind == "claude-cli":
         return ClaudeCLIClient()
     if kind == "anthropic-api":
+        # uvicorn 과 CLI 는 이 로거를 설정하지 않아 INFO 가 버려진다 — 사용량 줄이 터미널(stderr)에 보이게 한 번만 붙인다.
+        if not logger.handlers:
+            logger.addHandler(logging.StreamHandler())
+            logger.setLevel(logging.INFO)
         return AnthropicAPIClient()
     raise ValueError(f"{LLM_ENV} 는 claude-cli 또는 anthropic-api 여야 함: {kind!r}")
 

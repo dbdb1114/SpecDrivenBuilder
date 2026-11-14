@@ -33,6 +33,16 @@ uv run ruff check . && uv run ruff format .
 LLM 호출 수단은 환경 변수 `SPECBUILDER_LLM` 으로 고른다 (`llm/client.py` 의 `make_client()`).
 - `claude-cli` (기본) — `claude -p` 서브프로세스(`ClaudeCLIClient`). API 키 없이 로그인된 요금제로 돈다. 품질 회귀 기록은 이 수단 기준이다.
 - `anthropic-api` — Claude API(`AnthropicAPIClient`, 공식 SDK `anthropic`). `ANTHROPIC_API_KEY` 가 필요하고 호출마다 과금된다.
+  노드 프롬프트(`system`)는 캐시 표시를 붙여 보낸다 — **`system` 에는 호출마다 바뀌는 값을 넣지 말 것** (앞부분이 한 글자라도 다르면 캐시가 맞지 않는다).
+  호출마다 토큰 사용량 한 줄이 터미널에 찍힌다 (`llm usage node=… input=… output=… cache_write=… cache_read=…`).
+
+**호출 기록 (프롬프트 최적화용).** `SPECBUILDER_TRACE=1` 로 실행하면 호출마다 프롬프트·응답·사용량·걸린 시간이
+`output/_traces/<run_id>.jsonl` 에 남는다. 사용자의 요청과 답이 그대로 들어가므로 기본은 꺼져 있다.
+
+```bash
+uv run python -m specbuilder.llm.show_trace              # 가장 최근 실행의 호출별 토큰·비용 표
+uv run python -m specbuilder.llm.show_trace <run_id> --show 3   # 3번째 호출의 프롬프트와 응답 전문
+```
 
 모델은 `SPECBUILDER_MODEL` (기본 `claude-sonnet-5-5`). `.env` 자동 로드는 없다 — `uv run --env-file .env <명령>` 으로 넘기거나 셸에서 export.
 키는 `.env` 에만 적는다 (커밋되지 않음). 변수를 추가하면 `.env.example` 을 갱신할 것.
