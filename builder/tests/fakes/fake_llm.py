@@ -8,10 +8,24 @@ def files_reply(**overrides: str) -> str:
     """generate_artifacts 가 기대하는 구분선 형식의 응답을 만든다."""
     files = {
         "spec.md": "# 스펙\n\n가계부 프로그램.",
-        "SKILL.md": "---\nname: build-ledger\ndescription: 가계부를 만들 때 쓴다\n---\n\n1. 화면을 만든다.",
         "AGENTS.md": "# AGENTS\n\n## 용어사전\n",
+        "skills/build-ledger.md": "# 가계부 만들기\n\n1. 화면을 만든다.",
     } | overrides
     return "\n".join(f"=== FILE: {name} ===\n{body}" for name, body in files.items())
+
+
+def skill(
+    name: str = "build-ledger",
+    source: str = "new",
+    when: str = "가계부를 만들 때 쓴다",
+    basis: tuple[str, ...] = ("purpose",),
+) -> dict:
+    return {"name": name, "when": when, "source": source, "basis": list(basis)}
+
+
+def skills_reply(*skills: dict) -> str:
+    """select_skills 가 기대하는 JSON 응답을 만든다. 비우면 새로 쓰는 스킬 하나."""
+    return json.dumps({"skills": list(skills) or [skill()]}, ensure_ascii=False)
 
 
 def interview_reply(
@@ -53,6 +67,38 @@ def question(
     }
 
 
+def package(registry: str, name: str, version: str) -> dict:
+    return {"registry": registry, "name": name, "version": version}
+
+
+def tech(id: str, packages: list[dict] | None = None, choice: str = "고른 것") -> dict:
+    return {
+        "id": id,
+        "name": f"{id} 결정",
+        "choice": choice,
+        "reason": "혼자 쓰는 가계부라서",
+        "packages": packages or [],
+    }
+
+
+def stack_reply(
+    items: list[dict] | None = None, missing: list[dict] | None = None
+) -> str:
+    """select_stack 이 기대하는 JSON 응답을 만든다. 기본값은 fake_registry 의 기본 저장소 내용과 맞는 Next.js 스택."""
+    if items is None and missing is None:
+        items = [
+            tech("runtime", [package("eol", "nodejs", "24")], "Node.js"),
+            tech(
+                "web-framework",
+                [package("npm", "next", "16.4.6"), package("npm", "react", "19.2.0")],
+                "Next.js",
+            ),
+        ]
+    return json.dumps(
+        {"items": items or [], "missing": missing or []}, ensure_ascii=False
+    )
+
+
 # 노드별 기본 응답. 테스트가 그 노드의 응답을 준비하지 않았을 때 쓴다 —
 # 빈 노드가 실제 노드로 바뀌어도(LLM 호출이 생겨도) 그 노드를 다루지 않는 테스트는 그대로 돈다.
 # 새 노드가 프롬프트를 추가하면 여기에 한 줄 추가한다.
@@ -60,6 +106,8 @@ DEFAULT_REPLIES = {
     "interview_user": lambda: interview_reply(
         [item("purpose", content="혼자 쓰는 가계부")]
     ),
+    "select_stack": stack_reply,
+    "select_skills": skills_reply,
     "generate_artifacts": files_reply,
 }
 

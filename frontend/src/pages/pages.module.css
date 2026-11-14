@@ -1,0 +1,166 @@
+.title {
+  font-size: 1.5rem;
+  margin: 0 0 0.5rem;
+}
+
+.lead {
+  color: var(--color-muted);
+  margin: 0 0 1.5rem;
+}
+
+.textarea {
+  width: 100%;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 0.75rem;
+  background: var(--color-surface);
+  resize: vertical;
+}
+
+.card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 1.25rem;
+  margin-bottom: 1rem;
+}
+
+/* fieldset 의 legend 는 기본으로 테두리 위에 걸린다 — float 로 카드 안쪽에 둔다. */
+.cardTitle {
+  float: left;
+  width: 100%;
+  padding: 0;
+  font-size: 1.05rem;
+  font-weight: 600;
+  margin: 0 0 0.5rem;
+}
+
+.cardTitle + * {
+  clear: both;
+}
+
+.hint {
+  color: var(--color-muted);
+  font-size: 0.875rem;
+  margin: 0 0 0.75rem;
+}
+
+.options {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 0.75rem;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.option {
+  width: 100%;
+  text-align: left;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-surface);
+  padding: 0.6rem 0.8rem;
+}
+
+.option[aria-pressed="true"] {
+  border-color: var(--color-accent);
+  background: var(--color-accent-soft);
+}
+
+.number {
+  font-weight: 600;
+  color: var(--color-muted);
+  min-width: 1.5rem;
+}
+
+.badge {
+  margin-left: auto;
+  font-size: 0.75rem;
+  border-radius: 999px;
+  padding: 0.1rem 0.55rem;
+  background: var(--color-accent);
+  color: #fff;
+}
+
+.custom {
+  width: 100%;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 0.6rem 0.8rem;
+}
+
+.custom.active {
+  border-color: var(--color-accent);
+}
+
+.group {
+  margin-bottom: 1.5rem;
+}
+
+.groupTitle {
+  font-size: 0.95rem;
+  color: var(--color-muted);
+  margin: 0 0 0.5rem;
+}
+
+.item {
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-start;
+}
+
+.itemBody {
+  flex: 1;
+}
+
+.itemName {
+  font-weight: 600;
+}
+
+.status {
+  font-size: 0.75rem;
+  border-radius: 999px;
+  padding: 0.05rem 0.5rem;
+  margin-left: 0.5rem;
+  border: 1px solid var(--color-border);
+  color: var(--color-muted);
+  font-weight: 400;
+}
+
+.content {
+  margin: 0.25rem 0 0;
+}
+
+.revise {
+  white-space: nowrap;
+  font-size: 0.875rem;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.files {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.files pre {
+  overflow-x: auto;
+  background: var(--color-bg);
+  padding: 0.75rem;
+  border-radius: var(--radius);
+  font-size: 0.85rem;
+}
+
+.files summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.link {
+  color: var(--color-accent);
+}

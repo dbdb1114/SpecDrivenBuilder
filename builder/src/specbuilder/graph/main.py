@@ -197,7 +197,10 @@ def main(argv: list[str] | None = None) -> None:
     run_dir = args.out / run_id
     run_dir.mkdir(parents=True, exist_ok=True)
     for name, content in result["artifacts"].items():
-        (run_dir / name).write_text(content, encoding="utf-8")
+        path = run_dir / name
+        # 스킬은 작업자가 발견하는 하위 폴더(.claude/skills/<이름>/ 등)에 들어간다.
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(content, encoding="utf-8")
     # 품질 회귀 비교용 실행 기록 — 산출물 자체는 아니다.
     meta = {
         "model": llm.model,
@@ -207,6 +210,7 @@ def main(argv: list[str] | None = None) -> None:
         "interview_stops": result["interview_stops"],
         "qa": result["qa"],
         "spec_items": result["spec_items"],
+        "skills": result["skills"],
     }
     (run_dir / "run.json").write_text(
         json.dumps(meta, ensure_ascii=False, indent=2), encoding="utf-8"

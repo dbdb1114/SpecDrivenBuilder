@@ -39,10 +39,18 @@ def test_full_graph_bundle_interrupt_resume_then_generate():
         ),
         config,
     )["__interrupt__"][0].value
-    assert [i["id"] for i in screen["items"]] == ["purpose", "input-data"]
+    function = [i["id"] for i in screen["items"] if i["area"] == "function"]
+    assert function == ["purpose", "input-data"]
+    assert all(not i["editable"] for i in screen["items"] if i["area"] == "tech")
     final = graph.invoke(Command(resume={"action": "confirm"}), config)
 
-    assert set(final["artifacts"]) == {"spec.md", "SKILL.md", "AGENTS.md", "CLAUDE.md"}
+    assert set(final["artifacts"]) == {
+        "spec.md",
+        "AGENTS.md",
+        "CLAUDE.md",
+        ".claude/skills/build-ledger/SKILL.md",
+        ".agents/skills/build-ledger/SKILL.md",
+    }
     assert final["interview_stops"] == [
         {"node": "interview_user", "reason": "resolved", "rounds": 1}
     ]
@@ -59,6 +67,8 @@ def test_full_graph_bundle_interrupt_resume_then_generate():
     assert [n for n, _, _ in llm.calls] == [
         "interview_user",
         "interview_user",
+        "select_stack",
+        "select_skills",
         "generate_artifacts",
     ]
 
@@ -115,7 +125,6 @@ def test_revise_on_confirm_screen_asks_again_then_generates():
     assert "가족이 같이 써요" in llm.calls_for("generate_artifacts")[0]
     assert [qa["answer"] for qa in final["qa"]] == ["저 혼자요", "가족이 같이 써요"]
     assert [s["reason"] for s in final["interview_stops"]] == ["resolved", "resolved"]
-    # confirm_spec 은 LLM 을 부르지 않는다. resume 때 질문 생성을 다시 부르지도 않는다
-    assert [n for n, _, _ in llm.calls] == ["interview_user"] * 4 + [
-        "generate_artifacts"
-    ]
+    # confirm_spec 은 LLM 을 부르지 않는다. 답이 바뀌면 select_stack 부터 다시 지나온다
+    one_pass = ["interview_user", "interview_user", "select_stack", "select_skills"]
+    assert [n for n, _, _ in llm.calls] == one_pass * 2 + ["generate_artifacts"]
