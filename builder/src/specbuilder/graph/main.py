@@ -15,7 +15,7 @@ from langgraph.checkpoint.sqlite import SqliteSaver
 from langgraph.types import Command
 
 from specbuilder.graph.build import build_graph
-from specbuilder.llm import ClaudeCLIClient
+from specbuilder.llm import make_client
 from specbuilder.paths import CHECKPOINT_DB, OUTPUT_DIR
 from specbuilder.state import initial_state
 from specbuilder.state.question_format import (
@@ -180,7 +180,7 @@ def main(argv: list[str] | None = None) -> None:
 
     started = datetime.now()
     run_id = f"{started:%y%m%d-%H%M%S}-{args.request.stem}"
-    llm = CountingClient(ClaudeCLIClient())
+    llm = CountingClient(make_client())
     config = {"configurable": {"thread_id": run_id}}
 
     with SqliteSaver.from_conn_string(str(args.db)) as checkpointer:
