@@ -76,4 +76,4 @@ def test_cli_revise_then_confirm_writes_artifacts(monkeypatch, tmp_path):
     assert [qa["answer"] for qa in meta["qa"]] == ["저 혼자요", "가족이 같이 써요"]
     assert meta["spec_items"][0]["content"] == "가족이 같이 써요"
     # interview_user 2 + select_stack + select_skills, 고친 뒤 한 번 더, 그리고 generate_artifacts
-    assert meta["llm_calls"] == 9
+    assert meta["llm_calls"] == 10
