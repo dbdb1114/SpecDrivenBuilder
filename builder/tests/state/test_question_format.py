@@ -87,16 +87,34 @@ def test_bundle_question_count_limits():
         bundle_adapter.validate_python({**bundle, "questions": bundle["questions"] * 4})
 
 
+PREVIEW = {
+    "layout": "sidebar-left",
+    "colors": {
+        "background": "#F5F7FA",
+        "surface": "#FFFFFF",
+        "primary": "#1E3A5F",
+        "accent": "#4A90D9",
+        "text": "#1B2430",
+    },
+    "texts": {
+        "title": "가계부",
+        "menu": ["이번 달", "내역"],
+        "heading": "이번 달 지출",
+        "action": "내역 추가",
+        "items": [
+            {"title": "점심", "detail": "9,000원"},
+            {"title": "교통비", "detail": "1,450원"},
+        ],
+    },
+}
+
+
 def test_visual_and_preview():
     bundle = make_bundle()
     option, other = bundle["questions"][0]["options"]
     palette = {"type": "palette", "colors": ["#1E3A5F", "#F5F7FA"]}
     layout = {"type": "layout", "key": "sidebar-left"}
-    preview = {
-        "layout": "sidebar-left",
-        "colors": ["#1E3A5F"],
-        "texts": {"title": "가계부", "menu": ["내역"]},
-    }
+    preview = PREVIEW
     for visual in (palette, layout):
         q = {
             **bundle["questions"][0],
@@ -209,3 +227,34 @@ def test_confirm_screen_and_reply():
         confirm_reply_adapter.validate_python({"action": "revise", "item_ids": []})
     with pytest.raises(ValidationError):
         submission_adapter.validate_python({"action": "skip", "answers": []})
+
+
+def test_preview_colors_by_role_and_texts_fill_the_frame():
+    bundle = make_bundle()
+    assert (
+        bundle_adapter.validate_python({**bundle, "preview": PREVIEW})["preview"]
+        == PREVIEW
+    )
+    colors, texts = PREVIEW["colors"], PREVIEW["texts"]
+    item = texts["items"][0]
+    for bad in (
+        {**PREVIEW, "colors": {k: v for k, v in colors.items() if k != "text"}},
+        {**PREVIEW, "colors": {**colors, "accent": "blue"}},
+        {**PREVIEW, "texts": {**texts, "items": [item]}},
+        {**PREVIEW, "texts": {**texts, "items": [item] * 6}},
+        {**PREVIEW, "texts": {**texts, "action": ""}},
+        {**PREVIEW, "texts": {k: v for k, v in texts.items() if k != "heading"}},
+    ):
+        with pytest.raises(ValidationError):
+            bundle_adapter.validate_python({**bundle, "preview": bad})
+
+
+def test_old_preview_in_checkpoint_reads_as_none():
+    """작업 단위 I 이전 형식(colors 가 목록)은 그림 없이 질문만 보인다 — 저장된 실행을 열어도 응답 검증이 깨지지 않는다."""
+    old = {
+        "layout": "sidebar-left",
+        "colors": ["#1E3A5F", "#F5F7FA", "#4A90D9"],
+        "texts": {"title": "가계부", "menu": ["내역"]},
+    }
+    bundle = bundle_adapter.validate_python({**make_bundle(), "preview": old})
+    assert bundle["preview"] is None

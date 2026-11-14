@@ -1,235 +1,587 @@
-/* 틀의 색은 전부 --p-primary(주색) · --p-bg(바탕) · --p-accent(강조) 세 값에서 나온다. */
+/* 틀의 색은 전부 빌더가 준 역할 다섯 개에서 나온다:
+   --p-bg(바탕) · --p-surface(카드·목록 면) · --p-primary(메뉴·제목) · --p-accent(버튼·고른 메뉴) · --p-text(본문).
+   주색·강조색 위의 글자는 바탕색 — 빌더 프롬프트가 그 조합이 읽히는 색을 고르게 한다.
+   선·흐린 글자는 본문색을 옅게 섞어 만든다. 틀 바깥(창 테두리·폰 테두리)만 빌더 화면의 토큰을 쓴다. */
 
 .figureBox {
-  margin: 0 0 1.25rem;
+  margin: 10px 0 0;
 }
 
 .screen {
+  --p-line: color-mix(in srgb, var(--p-text) 12%, transparent);
+  --p-muted: color-mix(in srgb, var(--p-text) 62%, var(--p-surface));
+  container: preview / inline-size;
   overflow: hidden;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius);
+  border: 1px solid var(--line-3);
+  border-radius: 14px;
   background: var(--p-bg);
-  color: var(--p-primary);
-  font-size: 0.8rem;
-  line-height: 1.4;
+  color: var(--p-text);
+  font-family: var(--font-body);
+  font-size: 12px;
+  line-height: 1.45;
+  word-break: keep-all;
+  box-shadow: 0 18px 40px -24px rgb(0 0 0 / 0.8);
 }
 
 .caption {
-  margin-top: 0.4rem;
-  font-size: 0.85rem;
-  color: var(--color-muted);
+  margin-top: 8px;
+  font-size: 12.5px;
+  color: var(--muted-2);
 }
 
-.singleColumn,
-.topNav,
-.sidebarLeft,
-.listDetail,
-.dashboard {
+/* 창 테두리 — "실제 화면" 으로 읽히게 하는 장치. 틀 색과 섞이지 않게 빌더 토큰. */
+.chrome {
   display: flex;
-  flex-direction: column;
-  min-height: 15rem;
+  gap: 5px;
+  padding: 7px 10px;
+  background: var(--surface-3);
+  border-bottom: 1px solid var(--line-3);
 }
 
-.sidebarLeft {
-  flex-direction: row;
+.chrome span {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--line-3);
 }
 
-.header {
+/* --- 공통 조각 */
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.logo {
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  border-radius: 5px;
+  background: var(--p-accent);
+}
+
+.titleRow {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 0.5rem 1rem;
-  padding: 0.6rem 0.9rem;
-  background: var(--p-primary);
-  color: var(--p-bg);
+  justify-content: space-between;
+  gap: 8px;
 }
 
-.brand {
-  font-size: 0.95rem;
+.heading {
+  margin: 0;
+  color: var(--p-primary);
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.button {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  background: var(--p-accent);
+  color: var(--p-bg);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.button::before {
+  content: "+";
+  font-weight: 700;
+}
+
+.icon {
+  flex-shrink: 0;
+  width: 9px;
+  height: 9px;
+  border: 1.5px solid currentColor;
+  border-radius: 3px;
+  opacity: 0.7;
+}
+
+.itemTitle {
+  min-width: 0;
+  overflow: hidden;
+  font-weight: 500;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.itemDetail {
+  min-width: 0;
+  color: var(--p-muted);
+}
+
+.navRow,
+.navColumn,
+.segments,
+.tabs,
+.cards,
+.rows,
+.picks,
+.stats,
+.bars {
+  margin: 0;
+  padding: 0;
+  list-style: none;
 }
 
 .main {
   display: grid;
   flex: 1;
   align-content: start;
-  gap: 0.6rem;
-  padding: 0.9rem;
+  gap: 12px;
+  min-width: 0;
+  padding: 14px;
 }
 
 .panel {
-  padding: 0.7rem;
-  border: 1px solid color-mix(in srgb, var(--p-primary) 15%, transparent);
-  border-radius: 6px;
-  background: color-mix(in srgb, var(--p-bg) 85%, white);
+  padding: 4px 12px;
+  border: 1px solid var(--p-line);
+  border-radius: 10px;
+  background: var(--p-surface);
 }
 
-.lines {
+.rows {
   display: grid;
-  gap: 0.4rem;
 }
 
-.line {
-  display: block;
-  height: 0.45rem;
-  border-radius: 3px;
-  background: color-mix(in srgb, var(--p-primary) 22%, transparent);
+/* 문구 길이는 LLM 이 정한다 — 자르지 않고 줄을 바꿔 다 보이게 한다. */
+.row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--p-line);
 }
 
-.line:last-child:not(:first-child) {
-  width: 60%;
+.row:last-child {
+  border-bottom: 0;
 }
 
-.navRow,
-.navColumn,
-.chips,
-.tabs,
-.list {
-  margin: 0;
-  padding: 0;
-  list-style: none;
+.row .itemTitle {
+  flex-shrink: 0;
+  max-width: 55%;
+}
+
+.row .itemDetail {
+  text-align: right;
+}
+
+.cards {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.card {
+  display: grid;
+  gap: 4px;
+  padding: 11px 12px;
+  border: 1px solid var(--p-line);
+  border-left: 3px solid var(--p-accent);
+  border-radius: 10px;
+  background: var(--p-surface);
+}
+
+/* --- 위쪽 막대 */
+
+.bar,
+.primaryBar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 16px;
+  padding: 10px 14px;
+}
+
+.bar {
+  border-bottom: 1px solid var(--p-line);
+  background: var(--p-surface);
+}
+
+.bar .brand {
+  color: var(--p-primary);
+}
+
+.primaryBar {
+  background: var(--p-primary);
+  color: var(--p-bg);
 }
 
 .navRow {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.25rem 0.8rem;
-  opacity: 0.85;
+  gap: 4px 14px;
+}
+
+.navRow li {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 0;
+  border-bottom: 2px solid transparent;
+  opacity: 0.78;
 }
 
 .navRow .current {
-  border-bottom: 2px solid var(--p-accent);
+  border-bottom-color: var(--p-accent);
+  font-weight: 700;
   opacity: 1;
+}
+
+.bar .navRow li {
+  color: var(--p-muted);
+}
+
+.bar .navRow .current {
+  color: var(--p-primary);
+}
+
+/* --- single-column */
+
+.column {
+  display: grid;
+  gap: 12px;
+  width: min(100%, 420px);
+  margin: 0 auto;
+  padding: 16px 14px 18px;
+}
+
+.column .rows {
+  padding: 2px 12px;
+  border: 1px solid var(--p-line);
+  border-radius: 10px;
+  background: var(--p-surface);
+}
+
+.segments {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 3px;
+  justify-self: start;
+  border-radius: 999px;
+  background: var(--p-surface);
+  border: 1px solid var(--p-line);
+}
+
+.segments li {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 11px;
+  border-radius: 999px;
+  color: var(--p-muted);
+}
+
+.segments .icon {
+  display: none;
+}
+
+.segments .current {
+  background: var(--p-primary);
+  color: var(--p-bg);
+  font-weight: 700;
+}
+
+/* --- sidebar-left */
+
+.sidebarLeft {
+  display: flex;
+  min-height: 250px;
 }
 
 .sidebar {
   display: flex;
   flex-direction: column;
-  gap: 0.8rem;
-  width: 32%;
-  max-width: 10rem;
-  padding: 0.8rem;
+  gap: 14px;
+  width: 34%;
+  max-width: 170px;
+  padding: 14px 10px;
   background: var(--p-primary);
   color: var(--p-bg);
 }
 
 .navColumn {
   display: grid;
-  gap: 0.2rem;
+  gap: 2px;
 }
 
 .navColumn li {
-  padding: 0.25rem 0.45rem;
-  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 8px;
+  border-radius: 7px;
+  opacity: 0.8;
 }
 
 .navColumn .current {
-  background: color-mix(in srgb, var(--p-accent) 55%, transparent);
+  background: color-mix(in srgb, var(--p-bg) 16%, transparent);
+  box-shadow: inset 3px 0 0 var(--p-accent);
+  font-weight: 700;
+  opacity: 1;
 }
 
-.column {
-  display: grid;
-  gap: 0.7rem;
-  width: min(100%, 18rem);
-  margin: 0 auto;
-  padding: 0.9rem;
-}
-
-.chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.3rem;
-}
-
-.chips li {
-  padding: 0.1rem 0.55rem;
-  border: 1px solid color-mix(in srgb, var(--p-primary) 30%, transparent);
-  border-radius: 999px;
-}
-
-.chips .current {
-  border-color: var(--p-accent);
-  color: var(--p-accent);
-}
-
-.button {
-  justify-self: start;
-  padding: 0.3rem 0.9rem;
-  border-radius: 6px;
-  background: var(--p-accent);
-  color: var(--p-bg);
-}
+/* --- list-detail */
 
 .split {
   display: grid;
-  flex: 1;
-  grid-template-columns: 1fr 2fr;
-  gap: 0.6rem;
-  padding: 0.9rem;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
+  min-height: 210px;
 }
 
-.list {
+.listPane {
   display: grid;
   align-content: start;
-  gap: 0.35rem;
+  gap: 8px;
+  padding: 12px 10px;
+  border-right: 1px solid var(--p-line);
 }
 
-.list li {
-  padding: 0.45rem;
-  border: 1px solid color-mix(in srgb, var(--p-primary) 15%, transparent);
-  border-radius: 4px;
+.paneLabel {
+  margin: 0 4px;
+  color: var(--p-primary);
+  font-size: 13px;
+  font-weight: 700;
 }
 
-.list .current {
-  border-color: var(--p-accent);
-  box-shadow: inset 3px 0 0 var(--p-accent);
-}
-
-.cards {
+.picks {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 0.5rem;
+  gap: 4px;
+}
+
+.picks li {
+  display: grid;
+  gap: 1px;
+  padding: 7px 9px;
+  border-radius: 8px;
+}
+
+.picks .current {
+  background: var(--p-surface);
+  box-shadow:
+    inset 3px 0 0 var(--p-accent),
+    0 0 0 1px var(--p-line);
+}
+
+.detailPane {
+  display: grid;
+  align-self: start;
+  align-content: start;
+  justify-items: start;
+  gap: 6px;
+  margin: 12px;
+  padding: 14px;
+  border: 1px solid var(--p-line);
+  border-radius: 10px;
+  background: var(--p-surface);
+}
+
+.detailTitle {
+  color: var(--p-primary);
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.detailValue {
+  margin-bottom: 8px;
+  color: var(--p-muted);
+}
+
+/* --- dashboard */
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(96px, 1fr));
+  gap: 8px;
 }
 
 .stat {
   display: grid;
-  gap: 0.4rem;
-  padding: 0.6rem;
-  border-radius: 6px;
-  background: color-mix(in srgb, var(--p-accent) 14%, var(--p-bg));
+  gap: 4px;
+  padding: 11px 12px;
+  border: 1px solid var(--p-line);
+  border-radius: 10px;
+  background: var(--p-surface);
 }
 
-.figure {
+.statLabel {
+  overflow: hidden;
+  color: var(--p-muted);
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.statValue {
+  color: var(--p-primary);
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+}
+
+.bars {
+  display: grid;
+  gap: 8px;
+  padding: 8px 0;
+}
+
+.bars li {
+  display: grid;
+  grid-template-columns: minmax(56px, 30%) 1fr;
+  align-items: center;
+  gap: 10px;
+}
+
+.barLabel {
+  overflow: hidden;
+  color: var(--p-muted);
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.barTrack {
+  height: 8px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--p-primary) 10%, transparent);
+}
+
+.barFill {
   display: block;
-  width: 55%;
-  height: 0.9rem;
-  border-radius: 3px;
+  height: 100%;
+  border-radius: inherit;
   background: var(--p-accent);
 }
 
+/* --- mobile-tabs: 휴대폰 틀이 빌더 화면 위에 놓인다. 바깥 칸은 빌더 토큰. */
+
+.screen[data-layout="mobile-tabs"] {
+  padding: 18px 0;
+  background: var(--surface-2);
+}
+
 .phone {
+  position: relative;
   display: flex;
   flex-direction: column;
-  width: 13rem;
-  min-height: 20rem;
-  margin: 0.9rem auto;
+  width: min(240px, calc(100% - 32px));
+  height: 430px;
+  margin: 0 auto;
   overflow: hidden;
-  border: 6px solid var(--p-primary);
-  border-radius: 1.2rem;
+  border: 7px solid #000;
+  border-radius: 30px;
+  outline: 1px solid var(--line-3);
   background: var(--p-bg);
+}
+
+.statusBar {
+  display: flex;
+  justify-content: space-between;
+  padding: 7px 16px 2px;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.signal {
+  width: 22px;
+  height: 8px;
+  border-radius: 2px;
+  background: var(--p-text);
+  opacity: 0.7;
+}
+
+.phoneHead {
+  padding: 8px 14px;
+}
+
+.phoneHead .brand {
+  color: var(--p-primary);
+}
+
+.phoneMain {
+  display: grid;
+  flex: 1;
+  align-content: start;
+  gap: 8px;
+  padding: 4px 12px 54px;
+  overflow: hidden;
+}
+
+.phoneMain .heading {
+  font-size: 15px;
+}
+
+.phoneMain .rows {
+  gap: 6px;
+}
+
+.phoneMain .row {
+  flex-direction: column;
+  gap: 1px;
+  padding: 9px 11px;
+  border: 1px solid var(--p-line);
+  border-radius: 10px;
+  background: var(--p-surface);
+}
+
+.phoneMain .itemTitle {
+  max-width: 100%;
+}
+
+.phoneMain .itemDetail {
+  text-align: left;
+}
+
+.phoneMain .row:last-child {
+  border-bottom: 1px solid var(--p-line);
+}
+
+.fab {
+  position: absolute;
+  right: 12px;
+  bottom: 58px;
+  border-radius: 999px;
+  box-shadow: 0 6px 16px -6px color-mix(in srgb, var(--p-accent) 70%, transparent);
 }
 
 .tabs {
   display: flex;
   justify-content: space-around;
-  padding: 0.45rem 0.3rem;
-  border-top: 1px solid color-mix(in srgb, var(--p-primary) 20%, transparent);
-  font-size: 0.72rem;
+  padding: 7px 4px 10px;
+  border-top: 1px solid var(--p-line);
+  background: var(--p-surface);
+  font-size: 10px;
 }
 
 .tabs li {
+  display: grid;
+  flex: 1;
+  justify-items: center;
+  gap: 3px;
+  min-width: 0;
   overflow: hidden;
+  color: var(--p-muted);
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.tabs .icon {
+  width: 13px;
+  height: 13px;
+  border-radius: 4px;
 }
 
 .tabs .current {
@@ -237,7 +589,59 @@
   font-weight: 700;
 }
 
-/* mobile-tabs 는 휴대폰 틀이 바탕 위에 놓이도록 바깥 칸은 중립색으로 둔다. */
-.screen[data-layout="mobile-tabs"] {
-  background: var(--color-surface);
+.tabs .current .icon {
+  background: currentColor;
+  opacity: 1;
+}
+
+/* --- 좁은 폭 (폭 390px 화면의 말풍선 안). 배치의 성격은 남기고 칸만 줄인다. */
+
+@container preview (max-width: 420px) {
+  .main {
+    padding: 12px;
+  }
+
+  .cards {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .sidebar {
+    width: 38%;
+    padding: 12px 8px;
+  }
+
+  .sidebar .brand {
+    font-size: 12px;
+    white-space: normal;
+  }
+
+  .navColumn li {
+    padding: 5px 6px;
+  }
+
+  .row {
+    flex-direction: column;
+    gap: 1px;
+  }
+
+  .row .itemTitle {
+    max-width: 100%;
+  }
+
+  .row .itemDetail {
+    text-align: left;
+  }
+
+  .split {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .listPane {
+    border-right: 0;
+    border-bottom: 1px solid var(--p-line);
+  }
+
+  .stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
