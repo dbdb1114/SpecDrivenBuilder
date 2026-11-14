@@ -150,12 +150,30 @@ Test Files 5 passed (5) / Tests 35 passed (35), lint·tsc 출력 없음
   스펙에 이름 없이 남은 탓이다 (`interview_user` 의 선택지 문제, J 범위 밖 — 기본값 "서울 중구" 는 스펙에 있었고 작업자도 그것을 기본으로 제시했다).
 - 공통 스킬 `verify-before-report` (경로 문구 변경 후) 재검증: 스킬 하나와 `docs/spec.md` 만 둔 폴더에서 "hello.txt 에 안녕이라고 적고 알려줘" →
   스킬 로드, `docs/spec.md` 의 완료 기준을 읽어 파일을 다시 확인한 뒤 "된 것 / 확인 못 한 것 / 써 보는 방법" 으로 보고. 통과.
-- Codex: 이 PC 에 설치돼 있지 않아 `[미확인]`.
+- Codex: 아래 "실행 검증 — Codex" (설치 뒤 추가).
 
 ## 9. 안 한 것 / 남은 것
 
-- Codex 실행 검증 — 설치돼 있지 않음 `[미확인]`.
+- ~~Codex 실행 검증~~ — 설치 뒤 했다. 아래 "실행 검증 — Codex".
 - `backend/` 를 받는 경로는 단위 테스트·스냅샷으로만 확인했다. 회귀 세트에 화면과 서버를 따로 두는 요청이 없다.
 - 04 의 "동네 이름" 재질문은 `interview_user` 의 범위 (빈 답이 "직접 입력" 을 고르는 문제).
 
 토큰 소모 [추정]: 세션 약 20만 토큰 + 실제 `claude -p` 약 40회 (회귀 전 4건·후 4건 × 2회 = 실행당 7~10회 호출, 실행 검증 2, 공통 스킬 1).
+
+### 실행 검증 — Codex — 2026-11-14, codex-cli 0.169.0 (ChatGPT 로그인, 기본 모델 — 모델 ID `[미확인]`)
+
+위 Claude Code 검증과 같은 "후" 산출물을 빈 임시 폴더(git init)에 풀고 `codex exec -s <sandbox> --json "시작해"`.
+
+| 케이스 | sandbox | 읽은 문서 (순서대로) | 첫 작업 |
+|---|---|---|---|
+| 03-vague (화면 + 데이터베이스) | read-only | `docs/spec.md`, 스킬 `build-club-app`, 스킬 `verify-before-report` | 되묻지 않음. "읽기 전용이라 파일을 만들 수 없다" 고 사용자 말로 보고하고 멈춤 |
+| 03-vague | workspace-write | `docs/spec.md`, 스킬 `build-club-app` → **파일을 만들기 전에** `frontend/AGENTS.md`, `database/AGENTS.md`, 스킬 `verify-before-report` | 되묻지 않음. `database/migrations/`, `frontend/src/` 에 파일을 만들다가 `npm install` 에서 멈춤 (sandbox 에 네트워크가 없다 — 예상한 결과). "설치하지 못해 화면이 동작하는지는 확인하지 못했다" 고 보고 |
+| 04-no-screen (부분 없음) | read-only | `docs/spec.md`, 스킬 `build-morning-weather-bot` | 동네 이름과 텔레그램 봇 토큰을 물었다 (Claude Code 와 같다) |
+
+- 루트 `AGENTS.md` 는 Codex 가 스스로 읽었다 (세 건 모두 규칙대로 사용자의 말로 답했다).
+- **폴더별 `AGENTS.md` 는 루트 작업 절차의 "그 폴더의 파일을 고치기 전에 읽는다" 한 줄로 읽혔다** — Codex 가 하위 폴더를 스스로 찾지 않는다는 걱정(설계 결정의 이유)은 이 줄로 해소된다.
+- 스킬은 `.agents/skills/` 에서 읽혔다.
+- 공통 스킬 `verify-before-report` 만 둔 폴더(`AGENTS.md` 없음)에서 "hello.txt 에 안녕이라고 적고 알려줘": **스킬을 읽지 않았다.**
+  파일을 쓰고 다시 읽어 확인하긴 했지만 보고는 한 줄이었다 ("된 것 / 확인 못 한 것 / 써 보는 방법" 형식 아님). 같은 조건에서 Claude Code 는 스킬을 읽었다.
+  산출물 안(03 workspace-write)에서는 읽혔으므로, 스킬이 읽히는 것은 루트 `AGENTS.md` 의 작업 절차에 달려 있다.
+- 한 번씩만 돌렸다. Node 버전이 스펙의 최소 버전보다 낮다는 것을 작업자가 발견했다 (이 PC 는 24.20.0, 스펙은 24.22.3) — 사용자 PC 의 런타임 버전은 빌더가 알 수 없다.

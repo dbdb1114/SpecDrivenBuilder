@@ -166,8 +166,10 @@ LLM 에게 맡기면 프로그램마다 묻기도 하고 빠뜨리기도 하고,
 
 - 스킬 출처는 **섞기**다: 어느 프로그램에나 쓰이는 스킬은 공통 스킬 목록에서 고르고, 그 프로그램에만 필요한 스킬은 새로 쓴다.
 - 공통 스킬 목록에는 Claude Code 와 Codex 양쪽에서 실행 검증한 것만 올린다.
-  예외 (2026-11-14): 첫 공통 스킬 `verify-before-report` 는 Claude Code 에서만 실행 검증했고 Codex 검증은 대기 중이다
-  (작업한 PC 에 Codex 가 없었다). 검증 기록은 `docs/work/261113-select-skills/plan.md`.
+  첫 공통 스킬 `verify-before-report` 의 Codex 검증 (2026-11-14): 산출물 안에서는 통과 — 루트 `AGENTS.md` 의 작업 절차가
+  스킬을 읽으라고 적어 둔 덕에 읽혔다. 스킬 하나만 둔 폴더에서는 Codex 가 `description` 만으로 스킬을 읽지 않았다
+  (Claude Code 는 읽었다). 그래서 **스킬이 읽히는 것은 `description` 이 아니라 루트 `AGENTS.md` 의 작업 절차가 보장한다.**
+  검증 기록은 `docs/work/261113-select-skills/plan.md`, `docs/work/261114-artifact-structure/plan.md`.
 - 출력은 스킬 목록이다.
 
 | 필드 | 값 |
@@ -179,7 +181,7 @@ LLM 에게 맡기면 프로그램마다 묻기도 하고 빠뜨리기도 하고,
 
 - 공통 스킬 목록 (2026-11-13 결정): `builder/templates/skills/<이름>/SKILL.md` 폴더가 곧 목록이다. 이름과 "언제 쓰는지"는
   각 SKILL.md 의 frontmatter 에서 읽는다 — 목록 파일을 따로 두지 않아 목록과 본문이 어긋나지 않는다.
-  첫 공통 스킬은 `verify-before-report` (마쳤다고 말하기 전에 실제로 실행해 확인하고 사용자의 말로 보고) — Codex 미검증, 위 예외.
+  첫 공통 스킬은 `verify-before-report` (마쳤다고 말하기 전에 실제로 실행해 확인하고 사용자의 말로 보고) — Codex 검증 결과는 위.
 - 스킬 수는 1~6개이고, 그 프로그램을 만드는 순서를 다루는 새로 쓰는 스킬이 반드시 하나 있다. 근거는 있는 스펙 항목만 댈 수 있다.
 - 산출물에서 스킬을 두는 경로 (2026-11-13 결정): 스킬마다 `.claude/skills/<이름>/SKILL.md` 와 `.agents/skills/<이름>/SKILL.md`
   두 곳에 같은 내용을 넣는다. Claude Code 는 앞의 것만, Codex 는 뒤의 것만 발견한다 — 두 작업자가 같이 읽는 경로가 없다.
