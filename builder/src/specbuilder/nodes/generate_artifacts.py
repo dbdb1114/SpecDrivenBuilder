@@ -5,9 +5,16 @@ from string import Template
 from specbuilder.common_skills import CommonSkill, load_common_skills
 from specbuilder.llm import LLMCallError, LLMClient
 from specbuilder.paths import TEMPLATES_DIR, load_prompt
+from specbuilder.registry.refs import PART_LABELS, parse_parts
 from specbuilder.state import Profile, SkillEntry, SpecItem, State
 
-DOC_FILES = ("spec.md", "AGENTS.md")
+SPEC_FILE = "docs/spec.md"
+DOC_FILES = (SPEC_FILE, "AGENTS.md")
+# 폴더별 AGENTS.md 의 고정 섹션 (docs/design/design.md "generate_artifacts" — builder/AGENTS.md 가 레퍼런스).
+FOLDER_SECTIONS = ("구조", "명령어", "코드 규칙", "하지 말 것")
+# 루트 AGENTS.md 에서 폴더 구조도를 담는 섹션. 새로 쓰는 스킬이 가리킬 경로가 여기서 정해진다.
+STRUCTURE_SECTION = "구조"
+CLAUDE_IMPORT = "@AGENTS.md\n"
 # 두 작업자가 같이 읽는 경로가 없다 — Claude Code 는 .claude/skills, Codex 는 .agents/skills 만 발견한다.
 # 그래서 같은 내용을 두 곳에 넣는다 (docs/design/design.md "select_skills").
 SKILL_DIRS = (".claude/skills", ".agents/skills")
@@ -39,8 +46,37 @@ def _render_item(item: SpecItem) -> str:
     return f"- [{AREA_LABELS[item['area']]}] {item['name']}: {content}"
 
 
+def program_folders(items: list[SpecItem]) -> list[str]:
+    """기술 스펙 항목의 `부분:` 줄에서 산출물에 넣을 폴더(frontend·backend·database 순)를 정한다."""
+    found = {
+        part
+        for item in items
+        if item["area"] == "tech"
+        for part in parse_parts(item["content"])
+    }
+    return [folder for folder in PART_LABELS if folder in found]
+
+
+def _render_folders(items: list[SpecItem], folders: list[str]) -> list[str]:
+    if not folders:
+        return ["(없음 — 루트 문서와 docs/ 만 쓴다)"]
+    tech = [i for i in items if i["area"] == "tech"]
+    shared = [i["name"] for i in tech if not parse_parts(i["content"])]
+    lines = []
+    for folder in folders:
+        own = [i["name"] for i in tech if folder in parse_parts(i["content"])]
+        lines.append(
+            f"- `{folder}/` ({PART_LABELS[folder]}) — 이 폴더의 기술: "
+            + ", ".join(own + [f"{name}(여러 부분 공통)" for name in shared])
+        )
+    left = [f"`{f}/`" for f in PART_LABELS if f not in folders]
+    if left:
+        lines.append(f"- 만들지 않는 폴더: {', '.join(left)}")
+    return lines
+
+
 def render_context(state: State) -> str:
-    """요청 원문, "사용자가 정한 것 / 작업자가 정하는 것" 으로 나눈 스펙 항목, 스킬 목록, 프로필을 데이터 블록으로 만든다."""
+    """요청 원문, "사용자가 정한 것 / 작업자가 정하는 것" 으로 나눈 스펙 항목, 산출물 폴더, 스킬 목록, 프로필을 데이터 블록으로 만든다."""
     items = state["spec_items"]
     user = [_render_item(i) for i in items if _is_user_decision(i)]
     worker = [_render_item(i) for i in items if not _is_user_decision(i)]
@@ -49,6 +85,8 @@ def render_context(state: State) -> str:
         + (user or ["(없음)"])
         + ["", "## 작업자가 정하는 것"]
         + (worker or ["(없음)"])
+        + ["", "## 산출물 폴더"]
+        + _render_folders(items, program_folders(items))
         + ["", "## 스킬 목록"]
         + ([_render_skill(s) for s in state["skills"]] or ["(없음)"])
         + ["", "## 사용자 프로필"]
@@ -88,6 +126,29 @@ def parse_files(text: str, required: list[str]) -> dict[str, str]:
     return {name: files[name] for name in required}
 
 
+def _section(text: str, title: str) -> str | None:
+    """`## <title>` 로 시작하는 절의 본문. 없으면 None. 제목 뒤에 덧붙인 말(`## 구조 (폴더)`)은 허용한다."""
+    match = re.search(
+        rf"^## {re.escape(title)}\b.*?$(.*?)(?=^## |\Z)", text, re.MULTILINE | re.DOTALL
+    )
+    return match.group(1) if match else None
+
+
+def check_structure(files: dict[str, str], folders: list[str]) -> None:
+    """폴더별 AGENTS.md 의 고정 섹션과 루트 구조도를 확인한다. 빠지면 작업자가 경로를 매번 다르게 잡는다."""
+    for folder in folders:
+        name = f"{folder}/AGENTS.md"
+        missing = [t for t in FOLDER_SECTIONS if _section(files[name], t) is None]
+        if missing:
+            raise LLMCallError(f"{name} 에 빠진 섹션: {missing}")
+    structure = _section(files["AGENTS.md"], STRUCTURE_SECTION)
+    if structure is None:
+        raise LLMCallError(f"AGENTS.md 에 '## {STRUCTURE_SECTION}' 섹션이 없음")
+    missing = [f"{p}/" for p in ["docs", *folders] if f"{p}/" not in structure]
+    if missing:
+        raise LLMCallError(f"AGENTS.md 구조도에 빠진 폴더: {missing}")
+
+
 def render_skill(skill: SkillEntry, body: str, template: str) -> str:
     """새로 쓰는 스킬의 SKILL.md 를 만든다. frontmatter 는 LLM 이 아니라 스킬 목록 값으로 채운다 — 필수 필드가 빠질 수 없다."""
     # LLM 이 본문 앞에 frontmatter 를 또 붙이면 두 겹이 돼 작업자가 스킬을 못 읽는다.
@@ -108,9 +169,13 @@ def assemble(
     files: dict[str, str],
     common: dict[str, CommonSkill],
     template: str,
+    folders: list[str],
 ) -> dict[str, str]:
     """LLM 이 쓴 문서·스킬 본문과 공통 스킬 원문을 산출물 경로 → 내용으로 조립한다."""
-    artifacts = {name: files[name] for name in DOC_FILES}
+    # CLAUDE.md 는 본문 없이 임포트 한 줄로 고정 (루트 "산출물 규칙") — LLM 에 맡기지 않는다.
+    artifacts = {name: files[name] for name in _doc_files(folders)}
+    for base in ["", *(f"{folder}/" for folder in folders)]:
+        artifacts[f"{base}CLAUDE.md"] = CLAUDE_IMPORT
     for skill in skills:
         if skill["source"] == "common":
             if skill["name"] not in common:
@@ -123,6 +188,10 @@ def assemble(
     return artifacts
 
 
+def _doc_files(folders: list[str]) -> list[str]:
+    return [*DOC_FILES, *(f"{folder}/AGENTS.md" for folder in folders)]
+
+
 def make_generate_artifacts(llm: LLMClient):
     """LLM 클라이언트를 주입한 generate_artifacts 노드를 만든다."""
     system = load_prompt("generate_artifacts")
@@ -131,18 +200,17 @@ def make_generate_artifacts(llm: LLMClient):
 
     def generate_artifacts(state: State) -> dict:
         skills = state["skills"]
+        folders = program_folders(state["spec_items"])
         required = [
-            *DOC_FILES,
+            *_doc_files(folders),
             *(_body_file(s) for s in skills if s["source"] == "new"),
         ]
-        files = assemble(
-            skills,
-            parse_files(llm.complete(system, render_context(state)), required),
-            load_common_skills(),
-            skill_template,
-        )
-        # CLAUDE.md 는 본문 없이 임포트 한 줄로 고정 (루트 "산출물 규칙") — LLM 에 맡기지 않는다.
-        files["CLAUDE.md"] = "@AGENTS.md\n"
-        return {"artifacts": files}
+        files = parse_files(llm.complete(system, render_context(state)), required)
+        check_structure(files, folders)
+        return {
+            "artifacts": assemble(
+                skills, files, load_common_skills(), skill_template, folders
+            )
+        }
 
     return generate_artifacts

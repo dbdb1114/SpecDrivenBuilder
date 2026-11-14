@@ -124,9 +124,12 @@ def test_submit_answers_then_download_artifacts(two_questions):
 
     assert view["status"] == "done"
     assert set(view["artifacts"]) == {
-        "spec.md",
+        "docs/spec.md",
         "AGENTS.md",
         "CLAUDE.md",
+        # 기본 select_stack 응답은 화면(Next.js)만 고른다 — 화면 폴더만 생긴다.
+        "frontend/AGENTS.md",
+        "frontend/CLAUDE.md",
         ".claude/skills/build-ledger/SKILL.md",
         ".agents/skills/build-ledger/SKILL.md",
     }

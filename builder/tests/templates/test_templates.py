@@ -7,8 +7,11 @@ from pathlib import Path
 import pytest
 
 from specbuilder.common_skills import load_common_skills
-from specbuilder.nodes.generate_artifacts import render_skill
+from specbuilder.nodes.generate_artifacts import make_generate_artifacts, render_skill
 from specbuilder.paths import TEMPLATES_DIR
+from specbuilder.registry.refs import render_content
+from specbuilder.state import initial_state
+from tests.fakes.fake_llm import FakeLLM, item, skill
 
 SNAPSHOTS = Path(__file__).parent / "snapshots"
 # 루트 AGENTS.md "산출물 규칙": 플레이스홀더, 위험 명령·권한 우회·비밀값 금지.
@@ -57,4 +60,42 @@ def test_common_skill_snapshot_and_rules(name):
     # Claude 전용 문법(@임포트, 슬래시 명령)에 기대지 않는다 — Codex 도 같은 파일을 읽는다.
     assert not re.search(
         r"^@|(?<![\w/.])/[a-z][a-z-]+\b", skill["content"], re.MULTILINE
+    )
+
+
+# 산출물 폴더 구성 — 부분 조합마다 어떤 파일이 생기는가. 빌더 코드가 고정하는 파일(CLAUDE.md)은 내용까지.
+STRUCTURE_CASES = {
+    "스크립트만": [],
+    "화면만": [["frontend"]],
+    "화면+서버+데이터베이스": [["frontend"], ["backend"], ["backend", "database"]],
+}
+
+
+def _structure(parts: list[list[str]]) -> str:
+    state = initial_state("가계부")
+    state["skills"] = [skill(), skill("verify-before-report", "common")]
+    state["spec_items"] = [
+        item(
+            f"tech-{i}",
+            "delegated",
+            render_content("고른 것", [], "이유", p),
+            "worker",
+            "tech",
+        )
+        for i, p in enumerate([[], *parts])
+    ]
+    artifacts = make_generate_artifacts(FakeLLM())(state)["artifacts"]
+    return "\n".join(
+        f"{name}" + (f"  = {artifacts[name]!r}" if name.endswith("CLAUDE.md") else "")
+        for name in sorted(artifacts)
+    )
+
+
+def test_artifact_structure_snapshot():
+    assert_snapshot(
+        "artifact-structure.txt",
+        "\n\n".join(
+            f"# {case}\n{_structure(parts)}" for case, parts in STRUCTURE_CASES.items()
+        )
+        + "\n",
     )

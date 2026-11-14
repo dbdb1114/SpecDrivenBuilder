@@ -71,7 +71,7 @@ def test_cli_revise_then_confirm_writes_artifacts(monkeypatch, tmp_path):
     )
 
     (run_dir,) = (tmp_path / "out").iterdir()
-    assert (run_dir / "spec.md").exists()
+    assert (run_dir / "docs" / "spec.md").exists()
     meta = json.loads((run_dir / "run.json").read_text(encoding="utf-8"))
     assert [qa["answer"] for qa in meta["qa"]] == ["저 혼자요", "가족이 같이 써요"]
     assert meta["spec_items"][0]["content"] == "가족이 같이 써요"
