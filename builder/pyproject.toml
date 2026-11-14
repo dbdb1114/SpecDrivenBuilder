@@ -4,6 +4,7 @@ version = "0.1.0"
 description = "비개발자 요청을 스펙·SKILL.md·AGENTS.md 산출물로 만드는 LangGraph 빌더"
 requires-python = ">=3.14"
 dependencies = [
+    "anthropic>=2.8.0",
     "fastapi>=0.162.5",
     "langgraph>=1.2.20",
     "langgraph-checkpoint-sqlite>=3.1.3",
