@@ -4,6 +4,16 @@ from typing import Annotated, NotRequired, TypedDict
 from langgraph.types import Command, interrupt
 from pydantic import Field, TypeAdapter, ValidationError
 
+from specbuilder.common_items import (
+    CommonItem,
+    add_selected,
+    append_fixed,
+    fill_defaults,
+    fixed_questions,
+    load_common_items,
+    record_answers,
+    render_catalog,
+)
 from specbuilder.llm import LLMCallError, LLMClient, parse_json_reply
 from specbuilder.nodes.interview_user import render_context
 from specbuilder.paths import load_prompt
@@ -18,6 +28,7 @@ from specbuilder.state.question_format import (
     validate_submission,
 )
 from specbuilder.state.spec_items import (
+    ItemId,
     SpecItem,
     delegate_open,
     is_open,
@@ -50,11 +61,13 @@ class DesignReply(TypedDict):
     """이 노드의 LLM 응답. 질문 묶음 규격이 아니라 LLM 과 주고받는 형식이라 규격 모듈이 아니라 여기에 둔다.
 
     InterviewReply 에 미리보기 초안이 더해진다 — 제목·메뉴 문구는 스펙 항목을 읽어야 나오므로 LLM 이 쓴다.
+    이 프로그램에 해당하는 공통 항목 id 도 고른다 (interview_user.UserReply 와 같다).
     """
 
     items: list[SpecItem]
     questions: Annotated[list[DraftQuestion], Field(max_length=MAX_QUESTIONS)]
     preview: NotRequired[Preview | None]
+    common_items: NotRequired[list[ItemId]]
 
 
 design_reply_adapter = TypeAdapter(DesignReply)
@@ -95,27 +108,35 @@ def reopened_ids(items: list, qa: list) -> set[str]:
     }
 
 
-def _render_context(state: State) -> str:
+def _render_context(state: State, catalog: dict[str, CommonItem]) -> str:
     lines = [render_context(state)]
-    # preview-check 는 코드가 묻는 항목이라 LLM 에게 알릴 필요가 없다.
-    reopened = sorted(reopened_ids(state["spec_items"], state["qa"]) - CODE_OWNED)
+    # preview-check 와 공통 항목은 코드가 묻는 항목이라 LLM 에게 알릴 필요가 없다.
+    reopened = sorted(
+        reopened_ids(state["spec_items"], state["qa"]) - CODE_OWNED - set(catalog)
+    )
     if reopened:
         lines += ["", "## 사용자가 고치기로 고른 디자인 항목", ", ".join(reopened)]
+    block = render_catalog(catalog, state["spec_items"])
+    if block:
+        lines += ["", block]
     return "\n".join(lines)
 
 
 def _parse_reply(
-    text: str, items: list, reopened: set[str]
+    text: str, items: list, reopened: set[str], catalog: dict[str, CommonItem]
 ) -> tuple[list, list, Preview | None]:
     try:
         reply = design_reply_adapter.validate_python(parse_json_reply(text))
     except ValidationError as e:
         raise LLMCallError(f"{NODE} 응답이 규격에 맞지 않음: {e}") from e
     # 고치기로 고른 항목을 LLM 이 지난 답으로 다시 채우면 고치기가 조용히 무시된다 — 다시 묻게 아직 모름으로 둔다.
+    # 공통 항목은 코드가 만들고 채운다. LLM 이 쓴 갱신·질문은 버린다 (design.md "공통 항목").
     updates = [
         item
         for item in reply["items"]
-        if item["id"] not in CODE_OWNED and item["id"] not in reopened
+        if item["id"] not in CODE_OWNED
+        and item["id"] not in reopened
+        and item["id"] not in catalog
     ]
     for item in updates:
         if item["area"] != AREA:
@@ -126,14 +147,18 @@ def _parse_reply(
         merged = spec_items_adapter.validate_python(merge_updates(items, updates))
     except ValidationError as e:
         raise LLMCallError(f"{NODE} 항목 갱신이 규격에 맞지 않음: {e}") from e
-    return merged, reply["questions"], reply.get("preview")
+    merged = add_selected(merged, reply.get("common_items", []), catalog)
+    questions = [q for q in reply["questions"] if q["item_id"] not in catalog]
+    return merged, questions, reply.get("preview")
 
 
-def _check_questions(questions: list, items: list) -> list:
+def _check_questions(questions: list, items: list, catalog: dict) -> list:
     open_ids = {
         item["id"]
         for item in items
-        if is_open(item, AREA) and item["id"] != PREVIEW_ITEM_ID
+        if is_open(item, AREA)
+        and item["id"] != PREVIEW_ITEM_ID
+        and item["id"] not in catalog
     }
     asked = [q["item_id"] for q in questions]
     if open_ids and not questions:
@@ -277,6 +302,7 @@ def make_interview_design(llm: LLMClient):
     """LLM 클라이언트를 주입한 interview_design 노드를 만든다."""
     system = load_prompt(NODE)
     schema = design_reply_adapter.json_schema()
+    catalog = load_common_items(AREA)
 
     def interview_design(state: State) -> Command:
         items = state["spec_items"]
@@ -290,6 +316,7 @@ def make_interview_design(llm: LLMClient):
                 raise ValueError(f"답 제출이 규격에 맞지 않음: {e}") from e
             items, qa = apply_submission(items, bundle, submission, NODE, AREA)
             items = _record_choices(items, bundle, submission)
+            items = record_answers(items, bundle, submission, catalog)
             if submission["action"] == "finish":
                 return _stop(items, "user_finished", rounds + 1, qa)
             return Command(
@@ -303,16 +330,21 @@ def make_interview_design(llm: LLMClient):
             )
 
         if rounds >= MAX_ROUNDS:
-            return _stop(delegate_open(items, AREA), "round_limit", rounds)
+            return _stop(
+                fill_defaults(delegate_open(items, AREA), catalog),
+                "round_limit",
+                rounds,
+            )
         first_visit = not any(item["area"] == AREA for item in items)
         # 처음 오면 화면 유무부터 LLM 이 판정해야 한다. 그 뒤로는 묻는 노드의 실행 규칙을 따른다.
         if rounds == 0 and not first_visit and not needs_asking(items, AREA):
             return Command(goto=NEXT)
 
         items, questions, draft = _parse_reply(
-            llm.complete(system, _render_context(state), schema),
+            llm.complete(system, _render_context(state, catalog), schema),
             items,
             reopened_ids(items, state["qa"]),
+            catalog,
         )
         if first_visit and not any(item["area"] == AREA for item in items):
             return Command(update={"spec_items": [*items, _screen_item()]}, goto=NEXT)
@@ -323,9 +355,10 @@ def make_interview_design(llm: LLMClient):
             items = [*items, _preview_item()]
         if not needs_asking(items, AREA):
             return _stop(items, "resolved", rounds)
-        drafts = _check_questions(questions, items)
+        drafts = _check_questions(questions, items, catalog)
         if preview is not None:
             drafts = [_preview_question(items), *drafts]
+        drafts = append_fixed(drafts, fixed_questions(items, catalog))
         bundle = assign_ids(drafts, rounds + 1, True, preview)
         # interview_user 와 같은 이유로 묶음을 먼저 체크포인트에 남기고 자기 자신으로 돌아온다.
         return Command(

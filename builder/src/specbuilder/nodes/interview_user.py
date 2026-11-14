@@ -1,19 +1,32 @@
 import json
+from collections.abc import Collection
+from typing import NotRequired
 
 from langgraph.types import Command, interrupt
-from pydantic import ValidationError
+from pydantic import TypeAdapter, ValidationError
 
+from specbuilder.common_items import (
+    CommonItem,
+    add_selected,
+    append_fixed,
+    fill_defaults,
+    fixed_questions,
+    load_common_items,
+    record_answers,
+    render_catalog,
+)
 from specbuilder.llm import LLMCallError, LLMClient, parse_json_reply
 from specbuilder.paths import load_prompt
 from specbuilder.state import State
 from specbuilder.state.question_format import (
+    InterviewReply,
     apply_submission,
     assign_ids,
-    interview_reply_adapter,
     validate_submission,
 )
 from specbuilder.state.spec_items import (
     PURPOSE_ITEM_ID,
+    ItemId,
     delegate_open,
     is_open,
     merge_updates,
@@ -28,6 +41,18 @@ NEXT = "interview_design"
 MAX_ROUNDS = 5
 
 
+class UserReply(InterviewReply):
+    """이 노드의 LLM 응답 — InterviewReply 에 이 프로그램에 해당하는 공통 항목 id 가 더해진다.
+
+    LLM 과 주고받는 형식이라 규격 모듈이 아니라 여기에 둔다 (interview_design 의 DesignReply 와 같은 이유).
+    """
+
+    common_items: NotRequired[list[ItemId]]
+
+
+user_reply_adapter = TypeAdapter(UserReply)
+
+
 def reopened_ids(items: list, qa: list) -> set[str]:
     """확인 화면에서 사용자가 고치기로 고른 항목 — 아직 모름인데 지난 답이 있다.
 
@@ -39,8 +64,11 @@ def reopened_ids(items: list, qa: list) -> set[str]:
     }
 
 
-def render_context(state: State) -> str:
-    """요청 원문·결정 위임 범위·현재 스펙 항목·지난 문답을 LLM 입력용 데이터 블록으로 만든다 (지시문 없음 — 지시는 prompts/ 에)."""
+def render_context(state: State, skip: Collection[str] = ()) -> str:
+    """요청 원문·결정 위임 범위·현재 스펙 항목·지난 문답을 LLM 입력용 데이터 블록으로 만든다 (지시문 없음 — 지시는 prompts/ 에).
+
+    skip 은 "고치기로 고른 항목"에서 뺄 id — 공통 항목은 코드가 다시 묻으므로 LLM 에게 알리지 않는다.
+    """
     profile = state["profile"]
     lines = [
         "## 요청 원문",
@@ -54,7 +82,7 @@ def render_context(state: State) -> str:
         json.dumps(state["spec_items"], ensure_ascii=False, indent=2),
         "",
     ]
-    reopened = reopened_ids(state["spec_items"], state["qa"])
+    reopened = reopened_ids(state["spec_items"], state["qa"]) - set(skip)
     if reopened:
         lines += ["## 사용자가 고치기로 고른 항목", ", ".join(sorted(reopened)), ""]
     lines += ["## 지금까지의 질문과 답"]
@@ -65,31 +93,40 @@ def render_context(state: State) -> str:
     return "\n".join(lines)
 
 
-def _parse_reply(text: str, items: list, reopened: set[str]) -> tuple[list, list]:
+def _parse_reply(
+    text: str, items: list, reopened: set[str], catalog: dict[str, CommonItem]
+) -> tuple[list, list]:
     try:
-        reply = interview_reply_adapter.validate_python(parse_json_reply(text))
+        reply = user_reply_adapter.validate_python(parse_json_reply(text))
     except ValidationError as e:
         raise LLMCallError(f"{NODE} 응답이 규격에 맞지 않음: {e}") from e
     # 사용자가 고치겠다고 고른 항목을 LLM 이 지난 답으로 다시 채우면 고치기가 조용히 무시된다 — 다시 묻게 아직 모름으로 둔다.
-    reply["items"] = [i for i in reply["items"] if i["id"] not in reopened]
-    for item in reply["items"]:
+    # 공통 항목은 코드가 만들고 채운다. LLM 이 쓴 갱신·질문은 버린다 (design.md "공통 항목").
+    updates = [
+        i for i in reply["items"] if i["id"] not in reopened and i["id"] not in catalog
+    ]
+    for item in updates:
         if item["area"] != AREA:
             raise LLMCallError(f"{NODE} 는 {AREA} 항목만 다룬다: {item['id']}")
         if item["decided_by"] == "worker" and item["status"] == "unknown":
             raise LLMCallError(f"작업자가 정할 항목이 아직 모름: {item['id']}")
     try:
-        merged = spec_items_adapter.validate_python(
-            merge_updates(items, reply["items"])
-        )
+        merged = spec_items_adapter.validate_python(merge_updates(items, updates))
     except ValidationError as e:
         raise LLMCallError(f"{NODE} 항목 갱신이 규격에 맞지 않음: {e}") from e
-    return merged, reply["questions"]
+    merged = add_selected(merged, reply.get("common_items", []), catalog)
+    questions = [q for q in reply["questions"] if q["item_id"] not in catalog]
+    return merged, questions
 
 
-def _check_questions(questions: list, items: list) -> list:
-    open_ids = {item["id"] for item in items if is_open(item, AREA)}
+def _check_questions(questions: list, items: list, catalog: dict) -> list:
+    open_ids = {
+        item["id"]
+        for item in items
+        if is_open(item, AREA) and item["id"] not in catalog
+    }
     asked = [q["item_id"] for q in questions]
-    if not questions:
+    if open_ids and not questions:
         raise LLMCallError(f"아직 모름인 항목이 있는데 질문이 없음: {sorted(open_ids)}")
     if len(asked) != len(set(asked)):
         raise LLMCallError(f"한 묶음에 같은 항목을 두 번 물음: {asked}")
@@ -116,7 +153,8 @@ def _stop(items: list, reason: str, rounds: int, qa: list | None = None) -> Comm
 def make_interview_user(llm: LLMClient):
     """LLM 클라이언트를 주입한 interview_user 노드를 만든다."""
     system = load_prompt(NODE)
-    schema = interview_reply_adapter.json_schema()
+    schema = user_reply_adapter.json_schema()
+    catalog = load_common_items(AREA)
 
     def interview_user(state: State) -> Command:
         items = state["spec_items"]
@@ -129,6 +167,7 @@ def make_interview_user(llm: LLMClient):
             except (ValidationError, ValueError) as e:
                 raise ValueError(f"답 제출이 규격에 맞지 않음: {e}") from e
             items, qa = apply_submission(items, bundle, submission, NODE, AREA)
+            items = record_answers(items, bundle, submission, catalog)
             if submission["action"] == "finish":
                 return _stop(items, "user_finished", rounds + 1, qa)
             return Command(
@@ -142,20 +181,33 @@ def make_interview_user(llm: LLMClient):
             )
 
         if rounds >= MAX_ROUNDS:
-            return _stop(delegate_open(items, AREA), "round_limit", rounds)
+            return _stop(
+                fill_defaults(delegate_open(items, AREA), catalog),
+                "round_limit",
+                rounds,
+            )
         # 돌아오는 경로의 실행 규칙: 물을 항목이 없으면 기록 없이 지나간다.
         # 이번 진입에서 이미 물었다면(rounds > 0) 마지막 답을 반영하는 호출이 필요하므로 지나가지 않는다.
         if rounds == 0 and not needs_asking(items, AREA):
             return Command(goto=NEXT)
 
+        context = "\n\n".join(
+            filter(
+                None, [render_context(state, catalog), render_catalog(catalog, items)]
+            )
+        )
         items, questions = _parse_reply(
-            llm.complete(system, render_context(state), schema),
+            llm.complete(system, context, schema),
             items,
             reopened_ids(items, state["qa"]),
+            catalog,
         )
         if not needs_asking(items, AREA):
             return _stop(items, "resolved", rounds)
-        bundle = assign_ids(_check_questions(questions, items), rounds + 1, True)
+        drafts = append_fixed(
+            _check_questions(questions, items, catalog), fixed_questions(items, catalog)
+        )
+        bundle = assign_ids(drafts, rounds + 1, True)
         # 묶음을 먼저 체크포인트에 남기고 자기 자신으로 돌아온다 — 그래야 resume 시 LLM 재호출 없이 interrupt 로 바로 들어간다.
         return Command(
             update={"spec_items": items, "pending_bundle": bundle}, goto=NODE
