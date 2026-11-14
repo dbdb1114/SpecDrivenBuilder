@@ -109,3 +109,47 @@ def test_passes_reply_json_schema_to_llm():
     _, llm = run([interview_reply([item("purpose")])])
     schema = llm.schemas[0][1]
     assert set(schema["properties"]) == {"items", "questions"}
+
+
+def reopened_state() -> dict:
+    """확인 화면에서 용도를 고르고 돌아온 상태 — 용도는 아직 모름인데 지난 답이 있다."""
+    state = initial_state("가계부")
+    state["spec_items"] = [item("purpose", "unknown", ""), item("input-data")]
+    state["qa"] = [
+        {
+            "node": "interview_user",
+            "round": 1,
+            "item_id": "purpose",
+            "question": "누가 쓰나요?",
+            "answer": "저 혼자요",
+        }
+    ]
+    return state
+
+
+def test_reopened_item_is_asked_again_even_if_llm_fills_it():
+    reply = interview_reply(
+        [item("purpose", content="혼자 쓰는 가계부")], [question("purpose")]
+    )
+    result, llm = run([reply], reopened_state())
+
+    assert result.goto == "interview_user"
+    assert [q["item_id"] for q in result.update["pending_bundle"]["questions"]] == [
+        "purpose"
+    ]
+    by_id = {i["id"]: i for i in result.update["spec_items"]}
+    assert by_id["purpose"]["status"] == "unknown"
+    assert (
+        "## 사용자가 고치기로 고른 항목\npurpose" in llm.calls_for("interview_user")[0]
+    )
+
+
+def test_reopened_item_cannot_be_resolved_silently():
+    reply = interview_reply([item("purpose", content="혼자 쓰는 가계부")], [])
+    with pytest.raises(LLMCallError, match="질문이 없음"):
+        run([reply], reopened_state())
+
+
+def test_first_entry_context_has_no_reopened_section():
+    _, llm = run([interview_reply([item("purpose")])])
+    assert "고치기로 고른" not in llm.calls_for("interview_user")[0]
