@@ -77,3 +77,18 @@ def test_cli_revise_then_confirm_writes_artifacts(monkeypatch, tmp_path):
     assert meta["spec_items"][0]["content"] == "가족이 같이 써요"
     # interview_user 2 + select_stack + select_skills, 고친 뒤 한 번 더, 그리고 generate_artifacts
     assert meta["llm_calls"] == 10
+
+
+@pytest.mark.parametrize(
+    "line, expected",
+    [
+        ("서울 마포구", {"kind": "custom", "text": "서울 마포구"}),
+        ("5", {"kind": "custom", "text": "5"}),
+        ("1", {"kind": "custom", "text": "1"}),
+        ("", {"kind": "delegate"}),
+    ],
+)
+def test_parse_answer_without_options(line, expected):
+    """선택지 없는 질문은 번호를 고를 일이 없다 — 숫자만 적어도 답이고, 빈 줄은 맡김."""
+    asked = {"id": "q1", "multiple": False, "options": []}
+    assert cli.parse_answer(asked, line) == {"question_id": "q1", **expected}
