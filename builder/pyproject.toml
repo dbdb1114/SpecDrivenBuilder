@@ -7,6 +7,7 @@ dependencies = [
     "fastapi>=0.162.5",
     "langgraph>=1.2.20",
     "langgraph-checkpoint-sqlite>=3.1.3",
+    "packaging>=26.3",
     "pydantic>=2.14.3",
     "uvicorn>=0.54.0",
 ]
