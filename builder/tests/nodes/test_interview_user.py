@@ -5,6 +5,7 @@ from specbuilder.llm import LLMCallError
 from specbuilder.nodes.interview_user import MAX_ROUNDS, make_interview_user
 from specbuilder.state import initial_state
 from specbuilder.state.question_format import assign_ids
+from tests.conftest import SAVED_PROFILE
 from tests.fakes.fake_llm import FakeLLM, interview_reply, item, question
 
 
@@ -153,3 +154,17 @@ def test_reopened_item_cannot_be_resolved_silently():
 def test_first_entry_context_has_no_reopened_section():
     _, llm = run([interview_reply([item("purpose")])])
     assert "고치기로 고른" not in llm.calls_for("interview_user")[0]
+
+
+def test_context_has_delegation_scope_from_profile():
+    state = initial_state("가계부")
+    state["profile"] = {**SAVED_PROFILE, "delegation": "선택지가 있으면 물어봐 주세요"}
+    _, llm = run([interview_reply([item("purpose")])], state)
+
+    prompt = llm.calls_for("interview_user")[0]
+    assert "## 결정 위임 범위\n선택지가 있으면 물어봐 주세요" in prompt
+
+
+def test_context_delegation_scope_unknown_without_profile():
+    _, llm = run([interview_reply([item("purpose")])])
+    assert "## 결정 위임 범위\n(모름)" in llm.calls_for("interview_user")[0]

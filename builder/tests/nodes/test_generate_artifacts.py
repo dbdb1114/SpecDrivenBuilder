@@ -4,6 +4,7 @@ from specbuilder.common_skills import load_common_skills
 from specbuilder.llm import LLMCallError
 from specbuilder.nodes.generate_artifacts import make_generate_artifacts
 from specbuilder.state import initial_state
+from tests.conftest import SAVED_PROFILE
 from tests.fakes.fake_llm import FakeLLM, files_reply, item, skill
 
 COMMON = "verify-before-report"
@@ -105,3 +106,26 @@ def test_empty_skill_body_raises():
     )
     with pytest.raises(LLMCallError, match="본문이 비어"):
         make_generate_artifacts(llm)(state_with(BUILD))
+
+
+def test_context_has_profile_axes_for_worker_context():
+    state = state_with(BUILD)
+    state["profile"] = {**SAVED_PROFILE, "explanation": " "}
+    llm = FakeLLM()
+    make_generate_artifacts(llm)(state)
+
+    prompt = llm.calls_for("generate_artifacts")[0]
+    profile_block = prompt.split("## 사용자 프로필\n", 1)[1]
+    assert profile_block.splitlines() == [
+        "- 도메인 전문성: 사무·행정·회계",
+        "- 기술 노출 정도: 셋 다 해 본 적 없어요",
+        "- 설명 선호: (모름)",
+        "- 환경: 운영체제: Mac / AI 도구·요금제: Claude Pro",
+        "- 결정 위임 범위: 알아서 정하고 결과만 알려 주세요",
+    ]
+
+
+def test_context_without_profile_says_none():
+    llm = FakeLLM()
+    make_generate_artifacts(llm)(state_with(BUILD))
+    assert llm.calls_for("generate_artifacts")[0].endswith("## 사용자 프로필\n(없음)")
