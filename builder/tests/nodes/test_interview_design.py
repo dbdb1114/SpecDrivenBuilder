@@ -4,11 +4,12 @@ import pytest
 from langgraph.checkpoint.memory import InMemorySaver
 from langgraph.types import Command
 
+from specbuilder.common_items import fixed_questions, load_common_items
 from specbuilder.graph.build import build_graph
 from specbuilder.llm import LLMCallError
 from specbuilder.nodes.interview_design import make_interview_design
 from specbuilder.state import initial_state
-from specbuilder.state.question_format import LAYOUT_KEYS
+from specbuilder.state.question_format import LAYOUT_KEYS, assign_ids
 from tests.fakes.fake_llm import FakeLLM, interview_reply, item
 
 NAVY = ["#1E3A5F", "#F5F7FA", "#4A90D9"]
@@ -513,3 +514,99 @@ def test_revise_design_item_on_confirm_screen_asks_it_again():
     by_id = {i["id"]: i for i in screen["items"]}
     assert by_id["color-tone"]["content"] == f"따뜻한 베이지 ({', '.join(BEIGE)})"
     assert by_id["preview-check"]["status"] == "confirmed"
+
+
+# --- 공통 항목 (design.md "공통 항목")
+
+COMMON = load_common_items("design")
+TEXT_SIZE = COMMON["text-size"]
+ACCESSIBILITY = COMMON["basic-accessibility"]
+
+
+def design_reply_with(common_items, items=None, questions=None, preview=None):
+    data = json.loads(design_reply(items, questions, preview))
+    return json.dumps({**data, "common_items": common_items}, ensure_ascii=False)
+
+
+def test_selected_design_common_items_are_added_after_llm_questions():
+    reply = design_reply_with(
+        ["text-size", "basic-accessibility"],
+        [design("color-tone"), design("layout")],
+        [color_question(), layout_question()],
+    )
+    result, llm = run([reply], state_with([]))
+
+    by_id = {i["id"]: i for i in result.update["spec_items"]}
+    assert (by_id["text-size"]["status"], by_id["text-size"]["content"]) == (
+        "unknown",
+        "",
+    )
+    # 작업자 항목은 묻지 않고 기본 방향으로 바로 맡긴다.
+    assert by_id["basic-accessibility"] == {
+        "id": "basic-accessibility",
+        "name": ACCESSIBILITY["name"],
+        "area": "design",
+        "decided_by": "worker",
+        "status": "delegated",
+        "content": ACCESSIBILITY["default"],
+    }
+    asked = result.update["pending_bundle"]["questions"]
+    assert [q["item_id"] for q in asked] == ["color-tone", "layout", "text-size"]
+    assert asked[2]["text"] == TEXT_SIZE["question"]["text"]
+    assert all(o["visual"] is None for o in asked[2]["options"])
+    assert len(llm.calls) == 1
+
+
+def test_design_context_lists_design_common_items_only():
+    _, llm = run([design_reply()], state_with([]))
+    context = llm.calls_for("interview_design")[0]
+    assert "`text-size`" in context and "`basic-accessibility`" in context
+    assert "input-validation" not in context
+
+
+def test_preview_bundle_keeps_preview_first_then_fixed_question():
+    items = [
+        design("color-tone", "confirmed", f"차분한 남색 ({', '.join(NAVY)})"),
+        design("layout", "confirmed", "아래 탭 [mobile-tabs]"),
+        design("text-size"),
+    ]
+    result, _ = run(
+        [design_reply([], [], draft_preview())], state_with(items, question_round=1)
+    )
+
+    asked = [q["item_id"] for q in result.update["pending_bundle"]["questions"]]
+    assert asked == ["preview-check", "text-size"]
+
+
+def test_llm_cannot_write_design_common_items():
+    items = [
+        design("text-size", "confirmed", "버튼 넣기"),
+        design("layout", "confirmed", "[top-nav]"),
+        design("color-tone", "confirmed", "남색"),
+    ]
+    reply = design_reply_with(
+        [], [design("text-size", "confirmed", "LLM 이 바꾼 내용")], [], draft_preview()
+    )
+    result, _ = run([reply], state_with(items, question_round=1))
+
+    by_id = {i["id"]: i for i in result.update["spec_items"]}
+    assert by_id["text-size"]["content"] == "버튼 넣기"
+
+
+def test_text_size_answer_sets_worker_content(monkeypatch):
+    items = [design("text-size")]
+    bundle = assign_ids(fixed_questions(items, COMMON), 1, True)
+    answer(
+        monkeypatch,
+        {
+            "action": "submit",
+            "answers": [{"question_id": "q1", "kind": "option", "option_ids": ["o3"]}],
+        },
+    )
+    result, _ = run([], state_with(items, pending_bundle=bundle))
+
+    by_id = {i["id"]: i for i in result.update["spec_items"]}
+    assert by_id["text-size"]["status"] == "confirmed"
+    assert (
+        by_id["text-size"]["content"] == TEXT_SIZE["question"]["options"][2]["content"]
+    )
