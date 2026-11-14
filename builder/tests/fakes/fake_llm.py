@@ -106,6 +106,7 @@ DEFAULT_REPLIES = {
     "interview_user": lambda: interview_reply(
         [item("purpose", content="혼자 쓰는 가계부")]
     ),
+    "interview_design": interview_reply,  # 디자인 항목 없음 = 화면 없는 프로그램 → 지나감
     "select_stack": stack_reply,
     "select_skills": skills_reply,
     "generate_artifacts": files_reply,

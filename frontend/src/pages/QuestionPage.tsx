@@ -1,6 +1,8 @@
 import { useState } from "react";
 import type { Answer, AnswerSubmission, Question, QuestionBundle } from "../api/types";
 import { Button, ButtonRow } from "../components/Button";
+import { Preview } from "../components/Preview";
+import { Visual } from "../components/Visual";
 import styles from "./pages.module.css";
 
 // question-format.md: 고정 선택지는 options 에 없고 화면이 항상 같은 문구로 붙인다.
@@ -43,6 +45,7 @@ export function QuestionPage({ bundle, busy, onSubmit }: Props) {
       <p className={styles.lead}>
         모르겠으면 &ldquo;{DELEGATE_LABEL}&rdquo;를 누르거나 비워 두세요. 답하지 않은 질문은 알아서 정해요.
       </p>
+      {bundle.preview && <Preview preview={bundle.preview} />}
       <form
         onSubmit={(e) => {
           e.preventDefault();
@@ -89,7 +92,6 @@ function QuestionCard({ number, question, draft, onChange }: CardProps) {
     onChange({ kind: "option", ids });
   };
 
-  // option.visual 과 bundle.preview 는 F 가 그린다. 지금은 그리지 않고 글자 선택지로만 보여 준다.
   return (
     <fieldset className={styles.card}>
       <legend className={styles.cardTitle}>
@@ -106,6 +108,7 @@ function QuestionCard({ number, question, draft, onChange }: CardProps) {
               onClick={() => toggle(option.id)}
             >
               <span className={styles.number}>{i + 1}</span>
+              {option.visual && <Visual visual={option.visual} />}
               <span>{option.label}</span>
               {option.recommended && <span className={styles.badge}>추천</span>}
             </button>

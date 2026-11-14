@@ -65,6 +65,9 @@
 - `palette` — 색상 값 목록. 프론트엔드가 색 견본으로 그린다.
 - `layout` — 미리 정해 둔 레이아웃 종류 중 하나의 이름. 프론트엔드가 종류별 작은 그림을 갖고 있다.
   빌더는 목록에 없는 `key` 를 내보내지 않는다.
+  목록 (2026-11-14 결정, 작업 단위 F): `single-column` `top-nav` `sidebar-left` `list-detail` `dashboard` `mobile-tabs`.
+  원본은 빌더 `state/question_format.py` 의 `LayoutKey`(Literal) 하나 — OpenAPI enum 으로 나가 프론트엔드 생성 타입이 되고,
+  프론트엔드는 key 별 그림·틀을 `Record<LayoutKey, …>` 로 두어 key 가 늘면 타입 검사가 실패한다.
 
 ### preview
 
@@ -153,5 +156,4 @@
 
 ## 미결정
 
-- `layout` 의 `key` 목록 (레이아웃 종류를 몇 가지 둘지) — 프론트엔드 설계 때.
 - 규격 버전 필드를 둘지 — 저장된 checkpoint 와 규격이 어긋날 때의 호환 정책과 함께 (`state.md` "미결정").

@@ -188,8 +188,11 @@ export interface components {
              * @enum {string}
              */
             type: "layout";
-            /** Key */
-            key: string;
+            /**
+             * Key
+             * @enum {string}
+             */
+            key: "single-column" | "top-nav" | "sidebar-left" | "list-detail" | "dashboard" | "mobile-tabs";
         };
         /** Option */
         Option: {
@@ -226,8 +229,11 @@ export interface components {
         };
         /** Preview */
         Preview: {
-            /** Layout */
-            layout: string;
+            /**
+             * Layout
+             * @enum {string}
+             */
+            layout: "single-column" | "top-nav" | "sidebar-left" | "list-detail" | "dashboard" | "mobile-tabs";
             /** Colors */
             colors: string[];
             texts: components["schemas"]["PreviewTexts"];
