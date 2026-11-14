@@ -234,9 +234,33 @@ export interface components {
              * @enum {string}
              */
             layout: "single-column" | "top-nav" | "sidebar-left" | "list-detail" | "dashboard" | "mobile-tabs";
-            /** Colors */
-            colors: string[];
+            colors: components["schemas"]["PreviewColors"];
             texts: components["schemas"]["PreviewTexts"];
+        };
+        /**
+         * PreviewColors
+         * @description 역할 이름이 붙은 색 — 프론트엔드가 "몇 번째 색이 무엇인지" 추측하지 않는다.
+         *
+         *     surface·text 는 LLM 이 아니라 빌더 코드가 다른 색에서 계산한다 (바탕 위 글자 대비를 코드가 보장).
+         */
+        PreviewColors: {
+            /** Background */
+            background: string;
+            /** Surface */
+            surface: string;
+            /** Primary */
+            primary: string;
+            /** Accent */
+            accent: string;
+            /** Text */
+            text: string;
+        };
+        /** PreviewItem */
+        PreviewItem: {
+            /** Title */
+            title: string;
+            /** Detail */
+            detail: string;
         };
         /** PreviewTexts */
         PreviewTexts: {
@@ -244,6 +268,12 @@ export interface components {
             title: string;
             /** Menu */
             menu: string[];
+            /** Heading */
+            heading: string;
+            /** Action */
+            action: string;
+            /** Items */
+            items: components["schemas"]["PreviewItem"][];
         };
         /**
          * QA

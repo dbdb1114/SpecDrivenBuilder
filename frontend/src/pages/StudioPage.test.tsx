@@ -167,7 +167,20 @@ describe("StudioPage — 질문 묶음", () => {
         bundle: {
           round: 2,
           can_finish: true,
-          preview: { layout: "sidebar-left", colors: ["#1E3A5F", "#F5F7FA", "#4A90D9"], texts: { title: "가계부", menu: ["이번 달"] } },
+          preview: {
+            layout: "sidebar-left",
+            colors: { background: "#F5F7FA", surface: "#FBFCFD", primary: "#1E3A5F", accent: "#4A90D9", text: "#122339" },
+            texts: {
+              title: "가계부",
+              menu: ["이번 달"],
+              heading: "이번 달 지출",
+              action: "내역 추가",
+              items: [
+                { title: "점심", detail: "9,000원" },
+                { title: "교통비", detail: "1,450원" },
+              ],
+            },
+          },
           questions: [
             {
               id: "q1",
