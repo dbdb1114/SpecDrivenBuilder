@@ -1,0 +1,280 @@
+.main {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 48px;
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: clamp(40px, 7vw, 88px) clamp(16px, 4vw, 48px) 64px;
+}
+
+.lead {
+  flex: 999 1 520px;
+  min-width: 0;
+}
+
+.kicker {
+  margin-bottom: 20px;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--ac);
+}
+
+.hero {
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: clamp(44px, 7vw, 104px);
+  line-height: 1.02;
+  letter-spacing: -0.045em;
+}
+
+.hero > span {
+  display: block;
+}
+
+.dim {
+  color: var(--dim);
+}
+
+.buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 40px;
+}
+
+.go,
+.ghost {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 60px;
+  border-radius: 16px;
+  text-decoration: none;
+}
+
+.go {
+  gap: 12px;
+  padding: 0 30px;
+  background: var(--ac);
+  color: var(--bg);
+  font-weight: 700;
+  font-size: 17px;
+}
+
+.go:hover {
+  background: #ffffff;
+}
+
+.ghost {
+  padding: 0 24px;
+  border: 1.5px solid var(--line-3);
+  background: transparent;
+  color: var(--text);
+  font-weight: 500;
+  font-size: 16px;
+}
+
+.ghost:hover {
+  border-color: var(--text);
+}
+
+.steps {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-width: 640px;
+  margin-top: 56px;
+  padding: 0;
+  list-style: none;
+}
+
+.step {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 18px;
+  border: 1px solid var(--line-2);
+  border-radius: 14px;
+  background: var(--surface);
+}
+
+.stepNo {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border: 1.5px solid var(--ac);
+  border-radius: 50%;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--ac);
+}
+
+.stepBody {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.stepTitle {
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.code {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  white-space: nowrap;
+  overflow-x: auto;
+}
+
+.copy {
+  flex: none;
+  min-width: 64px;
+  min-height: 44px;
+  padding: 0 12px;
+  border: 1px solid var(--line-3);
+  border-radius: 10px;
+  background: transparent;
+  font-size: 13px;
+}
+
+.copy:hover {
+  border-color: var(--ac);
+  color: var(--ac);
+}
+
+.card {
+  flex: 1 1 360px;
+  min-width: 0;
+  border: 1px solid var(--line-2);
+  border-radius: 22px;
+  background: var(--surface);
+  overflow: hidden;
+}
+
+.cardHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 18px 22px;
+  border-bottom: 1px solid var(--line);
+}
+
+.zip,
+.fileName {
+  font-family: var(--font-mono);
+  overflow-wrap: anywhere;
+}
+
+.zip {
+  font-size: 13px;
+}
+
+.fileName {
+  flex: 1;
+  min-width: 0;
+  font-size: 14px;
+}
+
+.note {
+  flex: none;
+  font-size: 12px;
+  color: var(--muted-2);
+}
+
+.files {
+  padding: 8px;
+  list-style: none;
+}
+
+.files li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 13px 14px;
+  border-radius: 12px;
+}
+
+.files svg {
+  flex: none;
+}
+
+.preview {
+  max-height: 260px;
+  margin: 8px;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: #08080a;
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  line-height: 1.8;
+  color: var(--muted);
+  overflow: auto;
+  overflow-wrap: anywhere;
+}
+
+.heading {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.viewer {
+  flex: 1 1 100%;
+  min-width: 0;
+  border: 1px solid var(--line-2);
+  border-radius: 22px;
+  background: var(--surface);
+  overflow: hidden;
+}
+
+.tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 14px;
+  border-bottom: 1px solid var(--line);
+}
+
+.tab {
+  min-height: 44px;
+  padding: 0 14px;
+  border: 1.5px solid var(--line-3);
+  border-radius: 12px;
+  background: transparent;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  overflow-wrap: anywhere;
+  text-align: left;
+}
+
+.tab[aria-selected="true"] {
+  border-color: var(--ac);
+  background: var(--surface-3);
+}
+
+.content {
+  max-height: 70dvh;
+  margin: 0;
+  padding: 22px;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  line-height: 1.8;
+  color: var(--text-2);
+  white-space: pre-wrap;
+  overflow: auto;
+  overflow-wrap: anywhere;
+}
+
+.content:focus-visible {
+  outline: 2px solid var(--ac);
+  outline-offset: -4px;
+}

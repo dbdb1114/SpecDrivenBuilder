@@ -1,34 +1,59 @@
+/* 디자인 토큰 — docs/design/frontend-redesign/design-tokens.md */
 :root {
-  --color-text: #1d2330;
-  --color-muted: #5b6475;
-  --color-bg: #f6f7f9;
-  --color-surface: #ffffff;
-  --color-border: #d8dce3;
-  --color-accent: #2f5bd3;
-  --color-accent-soft: #e8eefc;
-  --color-danger: #b42318;
-  --color-danger-soft: #fdecea;
+  --bg: #0a0a0c;
+  --grid: #16161a;
+  --surface: #0e0e11;
+  --surface-2: #111115;
+  --surface-3: #18181d;
+  --dock: #0b0b0e;
+  --line: #1f1f25;
+  --line-2: #23232a;
+  --line-3: #2e2e36;
+  --text: #f2f2f0;
+  --text-2: #dadae0;
+  --muted: #b4b4bc;
+  --muted-2: #8e8e98;
+  --dim: #5e5e68;
+  /* 강조색은 이 변수 하나로 바꾼다. 강조색 위의 글자는 항상 --bg. */
+  --ac: #d4ff3a;
+  --warn: #ff6b2c;
+
+  --font-body: "Noto Sans KR", "Space Grotesk", system-ui, sans-serif;
+  --font-display: "Space Grotesk", "Noto Sans KR", sans-serif;
+  --font-mono: "JetBrains Mono", "Noto Sans KR", monospace;
+  --ease-out: cubic-bezier(0.16, 0.84, 0.24, 1);
+
+  /* Visual · Preview 컴포넌트가 쓰는 이름 — 새 토큰에 이어 준다. */
+  --color-border: var(--line-3);
+  --color-muted: var(--muted-2);
+  --color-surface: var(--surface-2);
   --radius: 10px;
 
-  font-family:
-    "Pretendard", "Apple SD Gothic Neo", "Noto Sans KR", system-ui, -apple-system, sans-serif;
+  font-family: var(--font-body);
   line-height: 1.6;
-  color: var(--color-text);
-  background: var(--color-bg);
+  color: var(--text);
+  background: var(--bg);
 }
 
 * {
   box-sizing: border-box;
 }
 
+::selection {
+  background: var(--ac);
+  color: var(--bg);
+}
+
 body {
   margin: 0;
+  background: var(--bg);
 }
 
 button,
 textarea,
 input {
   font: inherit;
+  color: inherit;
 }
 
 button {
@@ -37,5 +62,34 @@ button {
 
 button:disabled {
   cursor: not-allowed;
-  opacity: 0.5;
+  opacity: 0.45;
+}
+
+input:focus {
+  outline: none;
+}
+
+:is(button, a):focus-visible {
+  outline: 2px solid var(--ac);
+  outline-offset: 3px;
+}
+
+h1,
+h2,
+p,
+ul,
+ol {
+  margin: 0;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
 }

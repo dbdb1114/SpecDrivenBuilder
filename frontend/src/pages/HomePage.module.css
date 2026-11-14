@@ -1,0 +1,272 @@
+.main {
+  position: relative;
+  z-index: 1;
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: clamp(48px, 9vw, 112px) clamp(16px, 4vw, 48px) 48px;
+}
+
+.orbit {
+  position: absolute;
+  right: -120px;
+  top: 40px;
+  width: 520px;
+  height: 520px;
+  border: 1px dashed #2a2a31;
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.planet {
+  position: absolute;
+  top: -7px;
+  left: 50%;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--ac);
+}
+
+.moon {
+  position: absolute;
+  bottom: 60px;
+  left: 30px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--text);
+}
+
+.badge {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 28px;
+  padding: 7px 14px 7px 8px;
+  border: 1px solid #2a2a31;
+  border-radius: 999px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.tag {
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: var(--ac);
+  color: var(--bg);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.hero {
+  position: relative;
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: clamp(48px, 8.4vw, 124px);
+  line-height: 1.02;
+  letter-spacing: -0.045em;
+}
+
+.hero > span {
+  display: block;
+}
+
+.hero > .heroLast {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 0.28em;
+}
+
+.window {
+  display: inline-block;
+  height: 1.15em;
+  overflow: hidden;
+  vertical-align: bottom;
+  color: var(--ac);
+}
+
+.words {
+  display: flex;
+  flex-direction: column;
+}
+
+.words > span {
+  height: 1.15em;
+}
+
+.lead {
+  position: relative;
+  max-width: 620px;
+  margin-top: 32px;
+  font-size: clamp(16px, 1.6vw, 19px);
+  line-height: 1.7;
+  color: var(--muted);
+}
+
+.field {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  max-width: 860px;
+  margin-top: 40px;
+  padding: 10px 10px 10px 22px;
+  border: 1.5px solid var(--line-3);
+  border-radius: 20px;
+  background: var(--surface-2);
+  transition: border-color 0.2s;
+}
+
+.field:focus-within {
+  border-color: var(--ac);
+}
+
+.prompt {
+  font-family: var(--font-mono);
+  font-size: 15px;
+  color: var(--ac);
+}
+
+.input {
+  flex: 1 1 260px;
+  min-width: 0;
+  min-height: 52px;
+  border: 0;
+  background: transparent;
+  font-weight: 500;
+  font-size: clamp(16px, 1.7vw, 20px);
+}
+
+.go {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 52px;
+  padding: 0 26px;
+  border: 0;
+  border-radius: 13px;
+  background: var(--ac);
+  color: var(--bg);
+  font-weight: 700;
+  font-size: 16px;
+}
+
+.go:not(:disabled):hover {
+  background: #ffffff;
+}
+
+.error {
+  max-width: 860px;
+  margin-top: 12px;
+  font-size: 14px;
+  color: var(--warn);
+}
+
+.examples {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 18px;
+}
+
+.examplesLabel {
+  margin-right: 4px;
+  font-size: 13px;
+  color: var(--muted-2);
+}
+
+.chip {
+  min-height: 44px;
+  padding: 0 16px;
+  border: 1px solid var(--line-3);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text-2);
+  font-weight: 500;
+  font-size: 14px;
+}
+
+.chip:hover {
+  background: var(--text);
+  color: var(--bg);
+}
+
+.how {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1px;
+  margin-top: 88px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: var(--line);
+  overflow: hidden;
+}
+
+.howItem {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 28px;
+  background: var(--surface);
+}
+
+.howNo {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--ac);
+}
+
+.howTitle {
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.howDesc {
+  font-size: 14px;
+  line-height: 1.65;
+  color: #a2a2ab;
+}
+
+.band {
+  position: relative;
+  z-index: 1;
+  margin-top: 24px;
+  padding: 16px 0;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  background: var(--ac);
+  color: var(--bg);
+  overflow: hidden;
+}
+
+.bandTrack {
+  display: flex;
+  gap: 48px;
+  width: max-content;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 22px;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+}
+
+.bandItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 48px;
+}
+
+.diamond {
+  width: 10px;
+  height: 10px;
+  background: var(--bg);
+  transform: rotate(45deg);
+}
