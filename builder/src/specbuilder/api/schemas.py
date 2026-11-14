@@ -5,7 +5,7 @@ state/ 와 같이 TypedDict 로 둔다 — 그래프에서 나온 plain dict 를
 
 from typing import Literal, TypedDict
 
-from specbuilder.state.question_format import ConfirmScreen, QuestionBundle
+from specbuilder.state.question_format import QA, ConfirmScreen, QuestionBundle
 from specbuilder.state.spec_items import NonEmpty
 
 
@@ -19,6 +19,9 @@ class RunView(TypedDict):
     run_id: str
     # question: 질문 묶음 대기 / confirm: 확인 화면 대기 / stalled: 중간에 멈춤(retry 로 이어감) / done: 산출물 완성
     status: Literal["question", "confirm", "stalled", "done"]
+    # 사용자가 처음 적은 요청 원문과 지난 문답. 화면이 새로고침 뒤에도 대화 목록을 다시 그릴 수 있게 State 값을 그대로 내보낸다.
+    request: str
+    qa: list[QA]
     bundle: QuestionBundle | None
     confirm: ConfirmScreen | None
     # 파일명 → 내용. done 일 때만 채운다.

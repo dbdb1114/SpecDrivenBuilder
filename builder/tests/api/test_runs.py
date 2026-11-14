@@ -96,6 +96,7 @@ def test_start_returns_question_bundle(two_questions):
         "input-data",
     ]
     assert view["confirm"] is None and view["error"] is None
+    assert view["request"] == "가계부 만들어줘" and view["qa"] == []
     assert client.get(f"/api/runs/{view['run_id']}").json() == view
 
 
@@ -129,6 +130,10 @@ def test_submit_answers_then_download_artifacts(two_questions):
         ".claude/skills/build-ledger/SKILL.md",
         ".agents/skills/build-ledger/SKILL.md",
     }
+    # 화면이 새로고침 뒤에도 대화 목록을 다시 그릴 수 있게 지난 문답을 내보낸다.
+    assert view["request"] == "가계부"
+    first = view["qa"][0]
+    assert (first["item_id"], first["answer"]) == ("purpose", "저 혼자요")
     assert "저 혼자요" in llm.calls_for("generate_artifacts")[0]
 
     response = client.get(f"/api/runs/{run_id}/artifacts.zip")

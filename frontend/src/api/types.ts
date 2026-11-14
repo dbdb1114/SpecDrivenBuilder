@@ -5,6 +5,7 @@ type Schemas = components["schemas"];
 
 export type RunView = Schemas["RunView"];
 export type RunStatus = RunView["status"];
+export type QA = Schemas["QA"];
 export type QuestionBundle = Schemas["QuestionBundle"];
 export type Question = Schemas["Question"];
 export type Option = Schemas["Option"];

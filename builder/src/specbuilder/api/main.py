@@ -38,6 +38,8 @@ def _view(graph, run_id: str, error: str | None = None) -> RunView:
     view = {
         "run_id": run_id,
         "status": "done",
+        "request": snapshot.values.get("request", ""),
+        "qa": snapshot.values.get("qa", []),
         "bundle": None,
         "confirm": None,
         "artifacts": {},
