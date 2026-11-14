@@ -113,7 +113,7 @@ describe("QuestionPage", () => {
     expect(screen.queryByRole("button", { name: "그만 묻고 만들어 주세요" })).not.toBeInTheDocument();
   });
 
-  it("visual · preview 가 와도 글자 선택지로 그린다", () => {
+  it("visual 은 선택지 안에 그림으로, preview 는 질문 위에 미리보기로 그린다", () => {
     const bundle: QuestionBundle = {
       ...BUNDLE,
       preview: {
@@ -132,7 +132,20 @@ describe("QuestionPage", () => {
       ],
     };
     setup(bundle);
-    expect(screen.getByRole("button", { name: /차분한 남색/ })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /왼쪽 메뉴/ })).toBeInTheDocument();
+    const navy = screen.getByRole("button", { name: /차분한 남색/ });
+    const left = screen.getByRole("button", { name: /왼쪽 메뉴/ });
+    // 그림은 aria-hidden 이라 버튼 이름은 라벨 그대로다.
+    expect(navy).toHaveAccessibleName("1차분한 남색추천");
+    expect(within(navy).getByTestId("palette").children).toHaveLength(2);
+    expect(within(left).getByTestId("layout-sidebar-left")).toBeInTheDocument();
+    const preview = screen.getByRole("figure", { name: "미리보기" });
+    expect(within(preview).getByText("가계부")).toBeInTheDocument();
+    expect(within(preview).getByText("이번 달")).toBeInTheDocument();
+  });
+
+  it("visual · preview 가 없으면 그림도 미리보기도 없다", () => {
+    setup();
+    expect(screen.queryByRole("figure")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("palette")).not.toBeInTheDocument();
   });
 });

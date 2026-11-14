@@ -1,0 +1,243 @@
+/* 틀의 색은 전부 --p-primary(주색) · --p-bg(바탕) · --p-accent(강조) 세 값에서 나온다. */
+
+.figureBox {
+  margin: 0 0 1.25rem;
+}
+
+.screen {
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--p-bg);
+  color: var(--p-primary);
+  font-size: 0.8rem;
+  line-height: 1.4;
+}
+
+.caption {
+  margin-top: 0.4rem;
+  font-size: 0.85rem;
+  color: var(--color-muted);
+}
+
+.singleColumn,
+.topNav,
+.sidebarLeft,
+.listDetail,
+.dashboard {
+  display: flex;
+  flex-direction: column;
+  min-height: 15rem;
+}
+
+.sidebarLeft {
+  flex-direction: row;
+}
+
+.header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1rem;
+  padding: 0.6rem 0.9rem;
+  background: var(--p-primary);
+  color: var(--p-bg);
+}
+
+.brand {
+  font-size: 0.95rem;
+}
+
+.main {
+  display: grid;
+  flex: 1;
+  align-content: start;
+  gap: 0.6rem;
+  padding: 0.9rem;
+}
+
+.panel {
+  padding: 0.7rem;
+  border: 1px solid color-mix(in srgb, var(--p-primary) 15%, transparent);
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--p-bg) 85%, white);
+}
+
+.lines {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.line {
+  display: block;
+  height: 0.45rem;
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--p-primary) 22%, transparent);
+}
+
+.line:last-child:not(:first-child) {
+  width: 60%;
+}
+
+.navRow,
+.navColumn,
+.chips,
+.tabs,
+.list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.navRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.8rem;
+  opacity: 0.85;
+}
+
+.navRow .current {
+  border-bottom: 2px solid var(--p-accent);
+  opacity: 1;
+}
+
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+  width: 32%;
+  max-width: 10rem;
+  padding: 0.8rem;
+  background: var(--p-primary);
+  color: var(--p-bg);
+}
+
+.navColumn {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.navColumn li {
+  padding: 0.25rem 0.45rem;
+  border-radius: 4px;
+}
+
+.navColumn .current {
+  background: color-mix(in srgb, var(--p-accent) 55%, transparent);
+}
+
+.column {
+  display: grid;
+  gap: 0.7rem;
+  width: min(100%, 18rem);
+  margin: 0 auto;
+  padding: 0.9rem;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+}
+
+.chips li {
+  padding: 0.1rem 0.55rem;
+  border: 1px solid color-mix(in srgb, var(--p-primary) 30%, transparent);
+  border-radius: 999px;
+}
+
+.chips .current {
+  border-color: var(--p-accent);
+  color: var(--p-accent);
+}
+
+.button {
+  justify-self: start;
+  padding: 0.3rem 0.9rem;
+  border-radius: 6px;
+  background: var(--p-accent);
+  color: var(--p-bg);
+}
+
+.split {
+  display: grid;
+  flex: 1;
+  grid-template-columns: 1fr 2fr;
+  gap: 0.6rem;
+  padding: 0.9rem;
+}
+
+.list {
+  display: grid;
+  align-content: start;
+  gap: 0.35rem;
+}
+
+.list li {
+  padding: 0.45rem;
+  border: 1px solid color-mix(in srgb, var(--p-primary) 15%, transparent);
+  border-radius: 4px;
+}
+
+.list .current {
+  border-color: var(--p-accent);
+  box-shadow: inset 3px 0 0 var(--p-accent);
+}
+
+.cards {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.5rem;
+}
+
+.stat {
+  display: grid;
+  gap: 0.4rem;
+  padding: 0.6rem;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--p-accent) 14%, var(--p-bg));
+}
+
+.figure {
+  display: block;
+  width: 55%;
+  height: 0.9rem;
+  border-radius: 3px;
+  background: var(--p-accent);
+}
+
+.phone {
+  display: flex;
+  flex-direction: column;
+  width: 13rem;
+  min-height: 20rem;
+  margin: 0.9rem auto;
+  overflow: hidden;
+  border: 6px solid var(--p-primary);
+  border-radius: 1.2rem;
+  background: var(--p-bg);
+}
+
+.tabs {
+  display: flex;
+  justify-content: space-around;
+  padding: 0.45rem 0.3rem;
+  border-top: 1px solid color-mix(in srgb, var(--p-primary) 20%, transparent);
+  font-size: 0.72rem;
+}
+
+.tabs li {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tabs .current {
+  color: var(--p-accent);
+  font-weight: 700;
+}
+
+/* mobile-tabs 는 휴대폰 틀이 바탕 위에 놓이도록 바깥 칸은 중립색으로 둔다. */
+.screen[data-layout="mobile-tabs"] {
+  background: var(--color-surface);
+}
