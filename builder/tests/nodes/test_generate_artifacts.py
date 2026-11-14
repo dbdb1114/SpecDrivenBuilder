@@ -119,6 +119,8 @@ def test_spec_decision_sections_are_written_by_builder_not_llm():
             "worker",
             "tech",
         ),
+        # 빌더 화면의 확인 절차는 프로그램에 대한 결정이 아니라서 스펙에 싣지 않는다.
+        item("preview-check", content="맞아요", area="design"),
     ]
     spec = (
         "# 스펙\n\n## 목적\n가계부.\n\n"
