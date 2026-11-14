@@ -5,7 +5,7 @@ from string import Template
 from specbuilder.common_skills import CommonSkill, load_common_skills
 from specbuilder.llm import LLMCallError, LLMClient
 from specbuilder.paths import TEMPLATES_DIR, load_prompt
-from specbuilder.state import SkillEntry, SpecItem, State
+from specbuilder.state import Profile, SkillEntry, SpecItem, State
 
 DOC_FILES = ("spec.md", "AGENTS.md")
 # 두 작업자가 같이 읽는 경로가 없다 — Claude Code 는 .claude/skills, Codex 는 .agents/skills 만 발견한다.
@@ -19,6 +19,14 @@ FILE_MARKER = re.compile(r"^=== FILE: (\S+) ===[ \t]*$", re.MULTILINE)
 
 
 AREA_LABELS = {"function": "용도·기능", "design": "디자인", "tech": "기술"}
+# 프로필 필드 → 수집 축 이름 (docs/design/interview-profile.md "수집 축"). 작업자 컨텍스트 번역의 입력.
+PROFILE_LABELS = {
+    "domain": "도메인 전문성",
+    "tech_exposure": "기술 노출 정도",
+    "explanation": "설명 선호",
+    "environment": "환경",
+    "delegation": "결정 위임 범위",
+}
 
 
 def _is_user_decision(item: SpecItem) -> bool:
@@ -32,7 +40,7 @@ def _render_item(item: SpecItem) -> str:
 
 
 def render_context(state: State) -> str:
-    """요청 원문과 스펙 항목을 "사용자가 정한 것 / 작업자가 정하는 것" 으로 나눈 데이터 블록으로 만든다."""
+    """요청 원문, "사용자가 정한 것 / 작업자가 정하는 것" 으로 나눈 스펙 항목, 스킬 목록, 프로필을 데이터 블록으로 만든다."""
     items = state["spec_items"]
     user = [_render_item(i) for i in items if _is_user_decision(i)]
     worker = [_render_item(i) for i in items if not _is_user_decision(i)]
@@ -43,7 +51,18 @@ def render_context(state: State) -> str:
         + (worker or ["(없음)"])
         + ["", "## 스킬 목록"]
         + ([_render_skill(s) for s in state["skills"]] or ["(없음)"])
+        + ["", "## 사용자 프로필"]
+        + _render_profile(state["profile"])
     )
+
+
+def _render_profile(profile: Profile | None) -> list[str]:
+    if not profile:
+        return ["(없음)"]
+    return [
+        f"- {label}: {profile[field].strip() or '(모름)'}"
+        for field, label in PROFILE_LABELS.items()
+    ]
 
 
 def _render_skill(skill: SkillEntry) -> str:

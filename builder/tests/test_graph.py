@@ -128,3 +128,48 @@ def test_revise_on_confirm_screen_asks_again_then_generates():
     # confirm_spec 은 LLM 을 부르지 않는다. 답이 바뀌면 select_stack 부터 다시 지나온다
     one_pass = ["interview_user", "interview_user", "select_stack", "select_skills"]
     assert [n for n, _, _ in llm.calls] == one_pass * 2 + ["generate_artifacts"]
+
+
+def test_profile_asked_once_then_reused_on_next_run(profile_file):
+    profile_file.unlink()
+    llm = FakeLLM({"interview_user": [interview_reply([item("purpose")])] * 2})
+    graph = build_graph(llm, InMemorySaver())
+    config = {"configurable": {"thread_id": "p1"}}
+
+    first = graph.invoke(initial_state("가계부"), config)
+    bundle = first["__interrupt__"][0].value
+    assert bundle["questions"][0]["item_id"] == "profile-1-domain"
+    assert len(bundle["questions"]) == 6
+    assert llm.calls == []
+
+    # 프로필 답 → 물을 스펙 항목이 없는 fake 라 interview_user 를 지나 확인 화면에서 멈춘다
+    screen = graph.invoke(
+        Command(
+            resume={
+                "action": "submit",
+                "answers": [
+                    {"question_id": "q1", "kind": "custom", "text": "세무 업무"}
+                ],
+            }
+        ),
+        config,
+    )
+    assert "items" in screen["__interrupt__"][0].value
+    final = graph.invoke(Command(resume={"action": "confirm"}), config)
+
+    assert final["profile"]["domain"] == "세무 업무"
+    assert final["interview_stops"][0] == {
+        "node": "interview_profile",
+        "reason": "resolved",
+        "rounds": 1,
+    }
+    assert "세무 업무" in llm.calls_for("generate_artifacts")[0]
+    assert "## 사용자의 환경\n운영체제: " in llm.calls_for("select_stack")[0]
+    assert profile_file.exists()
+
+    # 같은 저장 경로로 다음 실행: 프로필 묶음 없이 확인 화면까지 간다
+    second = graph.invoke(
+        initial_state("가계부"), {"configurable": {"thread_id": "p2"}}
+    )
+    assert "items" in second["__interrupt__"][0].value
+    assert second["profile"]["domain"] == "세무 업무"

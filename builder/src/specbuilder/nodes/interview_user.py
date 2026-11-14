@@ -40,10 +40,15 @@ def reopened_ids(items: list, qa: list) -> set[str]:
 
 
 def render_context(state: State) -> str:
-    """요청 원문·현재 스펙 항목·지난 문답을 LLM 입력용 데이터 블록으로 만든다 (지시문 없음 — 지시는 prompts/ 에)."""
+    """요청 원문·결정 위임 범위·현재 스펙 항목·지난 문답을 LLM 입력용 데이터 블록으로 만든다 (지시문 없음 — 지시는 prompts/ 에)."""
+    profile = state["profile"]
     lines = [
         "## 요청 원문",
         state["request"].strip(),
+        "",
+        # 위임 범위가 "누가 정하는가"(decided_by)의 경계를 옮긴다 (docs/design/design.md "interview_user").
+        "## 결정 위임 범위",
+        (profile["delegation"] or "(모름)") if profile else "(모름)",
         "",
         "## 현재 스펙 항목",
         json.dumps(state["spec_items"], ensure_ascii=False, indent=2),

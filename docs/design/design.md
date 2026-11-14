@@ -60,6 +60,9 @@
 - 수집 축은 `interview-profile.md` 를 따른다.
 - 요금은 프로그램이 아니라 사용자에 대한 정보이므로 프로필의 "환경" 축에서 묻는다.
   토큰을 직접 묻지 않는다. 쓰는 도구(Claude Code / Codex)와 요금제만 묻고, 빌더가 작업자 컨텍스트의 지침으로 번역한다.
+- 결정 (2026-11-14, 작업 단위 G): 고정 질문 묶음 1개(6문항), LLM 호출 0회. 저장은 `~/.specbuilder/profile.json`
+  (`SPECBUILDER_PROFILE_PATH`). 결정 위임 범위는 `interview_user` 에, 환경은 `select_stack` 에, 다섯 축 전부는 `generate_artifacts` 에 들어간다.
+  상세와 이유는 `interview-profile.md` "결정". 갱신 흐름은 다음 작업으로 미룸.
 
 ### interview_user
 
@@ -165,7 +168,7 @@
 
 | 노드 | 호출 |
 |---|---|
-| `interview_profile` | 실행하면 1회 이상, 건너뛰면 0회 |
+| `interview_profile` | 0회. 질문이 고정이다 (2026-11-14 결정) |
 | `interview_user` | 질문 묶음 하나당 1회 |
 | `interview_design` | 실행하면 질문 묶음 하나당 1회 |
 | `select_stack` | 1회, 돌아갈 때마다 1회 추가 |
@@ -187,4 +190,4 @@
 
 ## 미결정
 
-- 프로필 저장 위치 (`interview-profile.md` "열린 질문").
+- 사용 중 프로필이 틀렸을 때의 갱신 흐름 (`interview-profile.md` "열린 질문"). 프로필 저장 위치는 2026-11-14 결정됨.
