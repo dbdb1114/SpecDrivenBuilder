@@ -25,12 +25,17 @@ evals/        품질 회귀 세트 — cases/ 에 비개발자식 요청 원문 
 uv sync                          # 의존성
 uv run python -m specbuilder.graph.main evals/cases/01-short.md   # 그래프 CLI 실행 (답은 터미널 입력 또는 stdin 파이프)
 uv run uvicorn specbuilder.api.main:app --reload   # FastAPI 개발 서버
+uv run --env-file .env uvicorn specbuilder.api.main:app --reload   # .env 의 설정(Claude API 키 등)으로 띄울 때
 uv run pytest                    # 테스트
 uv run ruff check . && uv run ruff format .
 ```
 
-LLM 호출은 현재 `claude -p` 서브프로세스(`ClaudeCLIClient`)로 한다 — API 키 없이 로그인된 요금제로 돈다. 모델은 환경 변수
-`SPECBUILDER_MODEL` (기본 `claude-sonnet-5-5`). `.env` 자동 로드는 아직 없음 — 셸에서 export. 변수를 추가하면 `.env.example` 을 갱신할 것.
+LLM 호출 수단은 환경 변수 `SPECBUILDER_LLM` 으로 고른다 (`llm/client.py` 의 `make_client()`).
+- `claude-cli` (기본) — `claude -p` 서브프로세스(`ClaudeCLIClient`). API 키 없이 로그인된 요금제로 돈다. 품질 회귀 기록은 이 수단 기준이다.
+- `anthropic-api` — Claude API(`AnthropicAPIClient`, 공식 SDK `anthropic`). `ANTHROPIC_API_KEY` 가 필요하고 호출마다 과금된다.
+
+모델은 `SPECBUILDER_MODEL` (기본 `claude-sonnet-5-5`). `.env` 자동 로드는 없다 — `uv run --env-file .env <명령>` 으로 넘기거나 셸에서 export.
+키는 `.env` 에만 적는다 (커밋되지 않음). 변수를 추가하면 `.env.example` 을 갱신할 것.
 
 ## 코드 규칙
 
