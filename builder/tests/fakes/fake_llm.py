@@ -29,12 +29,15 @@ def skills_reply(*skills: dict) -> str:
 
 
 def interview_reply(
-    items: list[dict] | None = None, questions: list[dict] | None = None
+    items: list[dict] | None = None,
+    questions: list[dict] | None = None,
+    common_items: list[str] | None = None,
 ) -> str:
-    """묻는 노드가 기대하는 JSON 응답을 만든다."""
-    return json.dumps(
-        {"items": items or [], "questions": questions or []}, ensure_ascii=False
-    )
+    """묻는 노드가 기대하는 JSON 응답을 만든다. common_items 를 주지 않으면 필드를 넣지 않는다 (선택 필드)."""
+    reply = {"items": items or [], "questions": questions or []}
+    if common_items is not None:
+        reply["common_items"] = common_items
+    return json.dumps(reply, ensure_ascii=False)
 
 
 def item(
