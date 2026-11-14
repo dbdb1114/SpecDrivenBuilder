@@ -302,7 +302,7 @@ function QuestionDock({ question, number, position, canFinish, onAnswer, onFinis
           id={inputId}
           className={styles.input}
           value={custom}
-          placeholder="선택지에 없으면 그냥 말해 주세요"
+          placeholder={question.options.length ? "선택지에 없으면 그냥 말해 주세요" : "답을 적어 주세요"}
           autoComplete="off"
           onChange={(e) => setCustom(e.target.value)}
           onKeyDown={(e) => {
