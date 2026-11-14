@@ -219,3 +219,14 @@ def test_preview_colors_by_role_and_texts_fill_the_frame():
     ):
         with pytest.raises(ValidationError):
             bundle_adapter.validate_python({**bundle, "preview": bad})
+
+
+def test_old_preview_in_checkpoint_reads_as_none():
+    """작업 단위 I 이전 형식(colors 가 목록)은 그림 없이 질문만 보인다 — 저장된 실행을 열어도 응답 검증이 깨지지 않는다."""
+    old = {
+        "layout": "sidebar-left",
+        "colors": ["#1E3A5F", "#F5F7FA", "#4A90D9"],
+        "texts": {"title": "가계부", "menu": ["내역"]},
+    }
+    bundle = bundle_adapter.validate_python({**make_bundle(), "preview": old})
+    assert bundle["preview"] is None

@@ -9,6 +9,7 @@ from typing import Annotated, Literal, NotRequired, TypedDict, get_args
 
 from pydantic import (
     AfterValidator,
+    BeforeValidator,
     Field,
     StringConstraints,
     TypeAdapter,
@@ -86,6 +87,14 @@ class Preview(TypedDict):
     texts: PreviewTexts
 
 
+def _drop_old_preview(value: object) -> object:
+    # 작업 단위 I 이전 checkpoint 의 미리보기(colors 가 목록)는 새 틀에 입힐 문구가 없다 — 지어내지 않고 그림만 뺀다.
+    # 같은 묶음의 "이 느낌이 맞나요? (배치: … / 색: …)" 질문은 문장만으로 뜻이 통한다.
+    if isinstance(value, dict) and isinstance(value.get("colors"), list):
+        return None
+    return value
+
+
 class Option(TypedDict):
     id: str
     label: NonEmpty
@@ -118,7 +127,7 @@ class Question(TypedDict):
 class QuestionBundle(TypedDict):
     round: Annotated[int, Field(ge=1)]
     can_finish: bool
-    preview: Preview | None
+    preview: Annotated[Preview | None, BeforeValidator(_drop_old_preview)]
     questions: Annotated[list[Question], Field(min_length=1, max_length=MAX_QUESTIONS)]
 
 
