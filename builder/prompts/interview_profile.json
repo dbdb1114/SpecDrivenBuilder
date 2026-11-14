@@ -1,0 +1,77 @@
+{
+  "questions": [
+    {
+      "field": "domain",
+      "label": "하는 일",
+      "text": "어떤 일을 하시나요? 그 분야에서 쓰는 말은 풀어 쓰지 않고 그대로 쓰게 할게요. (이름이나 회사 이름은 적지 않아도 돼요)",
+      "multiple": false,
+      "options": [
+        { "label": "사무·행정·회계" },
+        { "label": "가게·자영업" },
+        { "label": "교육·강의" },
+        { "label": "학생" }
+      ],
+      "default": "알려 주지 않음 — 어느 분야 용어든 쉬운 말로 풀어 쓴다"
+    },
+    {
+      "field": "tech_exposure",
+      "label": "해 본 것",
+      "text": "아래 중 해 본 것을 모두 골라 주세요.",
+      "multiple": true,
+      "options": [
+        { "label": "터미널(검은 창)에 명령어를 입력해 봤어요" },
+        { "label": "Git·GitHub 로 파일을 올려 봤어요" },
+        { "label": "엑셀 함수나 노코드 도구(노션 등)를 써 봤어요" },
+        { "label": "셋 다 해 본 적 없어요", "recommended": true }
+      ],
+      "default": "해 본 것 없음 — 터미널·Git 경험 없음"
+    },
+    {
+      "field": "explanation",
+      "label": "설명",
+      "text": "작업 결과를 어떻게 알려 드릴까요?",
+      "multiple": false,
+      "options": [
+        { "label": "결과만 짧게 알려 주세요", "recommended": true },
+        { "label": "왜 그렇게 했는지도 알려 주세요 (배우고 싶어요)" }
+      ],
+      "default": "결과만 짧게"
+    },
+    {
+      "field": "delegation",
+      "label": "결정 위임",
+      "text": "만드는 중에 고를 것이 생기면 어떻게 할까요? (예: 화면 배치, 저장 방식)",
+      "multiple": false,
+      "options": [
+        { "label": "알아서 정하고 결과만 알려 주세요", "recommended": true },
+        { "label": "선택지가 있으면 물어봐 주세요" }
+      ],
+      "default": "알아서 정하고 결과만 알려 주세요"
+    },
+    {
+      "field": "environment",
+      "label": "운영체제",
+      "text": "쓰시는 컴퓨터는 무엇인가요?",
+      "multiple": false,
+      "options": [
+        { "label": "Mac" },
+        { "label": "Windows" },
+        { "label": "Linux" }
+      ],
+      "default": "모름 — Mac 과 Windows 모두에서 되는 방법으로 안내"
+    },
+    {
+      "field": "environment",
+      "label": "AI 도구·요금제",
+      "text": "만든 문서를 실행할 AI 도구와 요금제를 모두 골라 주세요. 모르면 '알아서 정해 주세요' 를 골라 주세요.",
+      "multiple": true,
+      "options": [
+        { "label": "Claude Pro" },
+        { "label": "Claude Max" },
+        { "label": "ChatGPT Plus (Codex)" },
+        { "label": "ChatGPT Pro (Codex)" }
+      ],
+      "default": "모름 — 가장 작은 요금제로 보고 대화 왕복을 아낀다"
+    }
+  ]
+}
