@@ -1,42 +1,41 @@
 import styles from "./App.module.css";
-import { Button, ButtonRow } from "./components/Button";
-import { Notice } from "./components/Notice";
+import { Header } from "./components/Header";
 import { useRun } from "./hooks/useRun";
-import { ConfirmPage } from "./pages/ConfirmPage";
 import { DonePage } from "./pages/DonePage";
-import { QuestionPage } from "./pages/QuestionPage";
-import { StartPage } from "./pages/StartPage";
+import { HomePage } from "./pages/HomePage";
+import { StudioPage } from "./pages/StudioPage";
 
 export function App() {
-  const { view, busy, error, screen, start, submit, confirm, retry, restart } = useRun();
+  const { view, pending, error, screen, draftRequest, start, submit, confirm, retry, restart } = useRun();
 
+  // 단계 표시는 서버 상태와 기다리는 요청에서 계산한다 — 따로 상태로 두지 않는다.
+  let stage = 0;
   let page;
-  if (!view) {
-    page = <StartPage busy={busy} onStart={start} />;
-  } else if (view.status === "question" && view.bundle) {
-    page = <QuestionPage key={screen} bundle={view.bundle} busy={busy} onSubmit={submit} />;
-  } else if (view.status === "confirm" && view.confirm) {
-    page = <ConfirmPage key={screen} screen={view.confirm} busy={busy} onReply={confirm} />;
-  } else if (view.status === "done") {
+  if (view?.status === "done") {
+    stage = 3;
     page = <DonePage runId={view.run_id} artifacts={view.artifacts} onRestart={restart} />;
-  } else {
+  } else if (view || pending === "start" || pending === "load") {
+    stage = view?.status === "confirm" || pending === "confirm" ? 2 : 1;
     page = (
-      <section>
-        <p>중간에 멈췄어요. 지금까지 답한 내용은 그대로 있어요.</p>
-        <ButtonRow>
-          <Button primary disabled={busy} onClick={retry}>
-            다시 시도
-          </Button>
-        </ButtonRow>
-      </section>
+      <StudioPage
+        view={view}
+        screen={screen}
+        pending={pending}
+        error={error}
+        request={view?.request ?? draftRequest}
+        onSubmit={submit}
+        onConfirm={confirm}
+        onRetry={retry}
+      />
     );
+  } else {
+    page = <HomePage initialText={draftRequest} error={error} onStart={start} />;
   }
 
   return (
-    <main className={styles.main}>
-      {busy && <Notice>정리하고 있어요. 1~2분 걸릴 수 있어요.</Notice>}
-      {error && <Notice error>{error}</Notice>}
+    <div className={styles.shell}>
+      <Header stage={stage} onHome={restart} />
       {page}
-    </main>
+    </div>
   );
 }

@@ -1,5 +1,8 @@
-.main {
-  max-width: 720px;
-  margin: 0 auto;
-  padding: 2.5rem 1rem 4rem;
+.shell {
+  position: relative;
+  min-height: 100dvh;
+  overflow: hidden;
+  background-image:
+    linear-gradient(var(--grid) 1px, transparent 1px), linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+  background-size: 64px 64px;
 }

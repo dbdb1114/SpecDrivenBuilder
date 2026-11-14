@@ -23,7 +23,7 @@ npm run gen:types   # openapi-typescript (builder 서버가 떠 있어야 함)
 ```
 src/
   api/          백엔드 호출 함수 — fetch 래퍼 하나, 엔드포인트별 함수
-  pages/        라우트 단위 화면
+  pages/        화면 단위 — HomePage(아이디어) · StudioPage(질문 묶음 · 확인 화면 · 생성 중) · DonePage(다운로드)
   components/   재사용 컴포넌트 — 페이지에 종속된 건 pages/ 아래에
   hooks/
   types/        백엔드 응답 타입 — `openapi-typescript`로 `/api/openapi.json`에서 **생성**, 손으로 쓰지 않음
@@ -39,7 +39,11 @@ src/
   (루트 AGENTS.md "질문 규칙" 의 UI 구현)
 - 상태 관리 라이브러리는 필요해지기 전까지 추가하지 않는다. 추가가 필요하면 먼저 물을 것.
 - 스타일은 CSS Modules (2026-11-13 결정, 작업 단위 E — Vite 내장이라 의존성이 없고 컴포넌트별로 스코프가 나뉜다).
-  컴포넌트 옆에 `*.module.css`, 공통 색·간격 토큰은 `src/index.css` 의 CSS 변수.
+  컴포넌트 옆에 `*.module.css`, 공통 색·간격 토큰은 `src/index.css` 의 CSS 변수. 강조색은 `--ac` 하나.
+- 여러 화면이 같이 쓰는 모션은 `src/motion.css` 의 전역 클래스(`rise` · `msg` · `btn` 등)로 쓴다 — CSS Modules 는 키프레임 이름을
+  파일마다 따로 묶는다. 시안과 토큰 원본은 `docs/design/frontend-redesign/`.
+- 라우터는 두지 않는다 (2026-11-14 결정). 화면은 서버 상태 `RunView.status` 하나로 정해지고, 실행은 주소의 `?run=<id>` 로 이어 간다.
+- 질문 묶음은 대화처럼 한 질문씩 보여 주되, 묶음을 다 답했을 때 한 번에 보낸다 — 서버 왕복은 묶음당 한 번이다.
 
 ## 하지 말 것
 

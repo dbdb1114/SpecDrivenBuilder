@@ -1,0 +1,463 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>SpecDrivenBuilder</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&amp;family=Noto+Sans+KR:wght@400;500;700;900&amp;family=JetBrains+Mono:wght@400;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0A0A0C}
+a{color:#D4FF3A}a:hover{color:#ffffff}
+.sdb *{box-sizing:border-box}
+.sdb ::selection{background:var(--ac);color:#0A0A0C}
+@keyframes up{from{opacity:0;transform:translateY(36px)}to{opacity:1;transform:none}}
+@keyframes pop{from{opacity:0;transform:translateY(14px) scale(.96)}to{opacity:1;transform:none}}
+@keyframes slide{from{opacity:0;transform:translateX(28px)}to{opacity:1;transform:none}}
+@keyframes marq{to{transform:translateX(-50%)}}
+@keyframes cycle{0%,20%{transform:translateY(0)}25%,45%{transform:translateY(-1.15em)}50%,70%{transform:translateY(-2.3em)}75%,95%{transform:translateY(-3.45em)}100%{transform:translateY(-4.6em)}}
+@keyframes blink{50%{opacity:0}}
+@keyframes bounce{0%,80%,100%{transform:translateY(0);opacity:.4}40%{transform:translateY(-6px);opacity:1}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes flash{0%{background:var(--ac);color:#0A0A0C}100%{background:transparent}}
+@keyframes scan{from{transform:translateY(-100%)}to{transform:translateY(400%)}}
+@keyframes orbit{to{transform:rotate(360deg)}}
+@keyframes grow{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+.rise{animation:up .8s cubic-bezier(.16,.84,.24,1) both}
+.d1{animation-delay:.08s}.d2{animation-delay:.18s}.d3{animation-delay:.3s}.d4{animation-delay:.44s}.d5{animation-delay:.6s}.d6{animation-delay:.78s}
+.marq{animation:marq 26s linear infinite}
+.rot{animation:cycle 7s cubic-bezier(.8,0,.2,1) infinite}
+.caret{animation:blink 1s steps(1) infinite}
+.msg{animation:pop .5s cubic-bezier(.16,.84,.24,1) both}
+.file{animation:slide .55s cubic-bezier(.16,.84,.24,1) both}
+.dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:#F2F2F0;animation:bounce 1.1s infinite}
+.dot:nth-child(2){animation-delay:.15s}.dot:nth-child(3){animation-delay:.3s}
+.spin{animation:spin .8s linear infinite}
+.flash{animation:flash .9s ease-out both}
+.scan{animation:scan 1.6s cubic-bezier(.6,0,.4,1) infinite}
+.orbit{animation:orbit 18s linear infinite}
+.bar{transform-origin:left;transition:width .7s cubic-bezier(.16,.84,.24,1)}
+.btn{transition:transform .18s cubic-bezier(.2,.8,.2,1),background .18s,color .18s,border-color .18s;cursor:pointer}
+.btn:hover{transform:translateY(-2px)}
+.btn:active{transform:translateY(1px) scale(.98)}
+.opt:hover{border-color:var(--ac);background:#17171C}
+.opt:hover .num{background:var(--ac);color:#0A0A0C}
+.chip:hover{background:#F2F2F0;color:#0A0A0C}
+.go:hover{background:#ffffff}
+.ghost:hover{border-color:#F2F2F0}
+.sdb input:focus{outline:none}
+.field:focus-within{border-color:var(--ac)}
+.sdb button:focus-visible,.sdb a:focus-visible{outline:2px solid var(--ac);outline-offset:3px}
+@media (prefers-reduced-motion: reduce){.sdb *{animation:none !important;transition:none !important}}
+</style>
+</helmet>
+
+<div class="sdb" style="--ac: {{accent}}; min-height: 980px; background: #0A0A0C; color: #F2F2F0; font-family: 'Noto Sans KR', 'Space Grotesk', system-ui, sans-serif; position: relative; overflow: hidden; background-image: linear-gradient(#16161A 1px, transparent 1px), linear-gradient(90deg, #16161A 1px, transparent 1px); background-size: 64px 64px">
+
+  <header style="position: relative; z-index: 2; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px; padding: 20px clamp(16px, 4vw, 48px); border-bottom: 1px solid #1F1F25; background: rgba(10,10,12,.82)">
+    <div style="display: flex; align-items: center; gap: 12px">
+      <div style="width: 34px; height: 34px; border-radius: 9px; background: var(--ac); display: grid; place-items: center">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0A0A0C" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h10M4 12h16M4 17h7"></path></svg>
+      </div>
+      <span style="font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 18px; letter-spacing: -0.01em">SpecDrivenBuilder</span>
+    </div>
+    <nav aria-label="진행 단계" style="display: flex; flex-wrap: wrap; align-items: center; gap: 6px; font-family: 'JetBrains Mono', monospace; font-size: 12px">
+      <sc-for list="{{stages}}" as="sg" hint-placeholder-count="3">
+        <span style="{{sg.style}}">{{sg.label}}</span>
+      </sc-for>
+    </nav>
+  </header>
+
+  <!-- ================= HOME ================= -->
+  <sc-if value="{{isHome}}" hint-placeholder-val="{{ true }}">
+    <main style="position: relative; z-index: 1; max-width: 1280px; margin: 0 auto; padding: clamp(48px, 9vw, 112px) clamp(16px, 4vw, 48px) 48px">
+
+      <div aria-hidden="true" class="orbit" style="position: absolute; right: -120px; top: 40px; width: 520px; height: 520px; border: 1px dashed #2A2A31; border-radius: 50%; pointer-events: none">
+        <div style="position: absolute; top: -7px; left: 50%; width: 14px; height: 14px; border-radius: 50%; background: var(--ac)"></div>
+        <div style="position: absolute; bottom: 60px; left: 30px; width: 8px; height: 8px; border-radius: 50%; background: #F2F2F0"></div>
+      </div>
+
+      <p class="rise" style="margin: 0 0 28px; display: inline-flex; align-items: center; gap: 10px; padding: 7px 14px 7px 8px; border: 1px solid #2A2A31; border-radius: 999px; font-size: 13px; color: #B4B4BC">
+        <span style="padding: 3px 9px; border-radius: 999px; background: var(--ac); color: #0A0A0C; font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 600">FOR VIBE CODERS</span>
+        코드는 Claude Code가, 설계도는 우리가.
+      </p>
+
+      <h1 style="margin: 0; font-family: 'Space Grotesk', 'Noto Sans KR', sans-serif; font-weight: 900; font-size: clamp(48px, 8.4vw, 124px); line-height: 1.02; letter-spacing: -0.045em">
+        <span class="rise d1" style="display: block">만들고 싶은 걸</span>
+        <span class="rise d2" style="display: block">말하면,</span>
+        <span class="rise d3" style="display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 .28em">
+          <span style="display: inline-block; height: 1.15em; overflow: hidden; vertical-align: bottom; color: var(--ac)">
+            <span class="rot" style="display: flex; flex-direction: column">
+              <span style="height: 1.15em">spec.md</span>
+              <span style="height: 1.15em">AGENTS.md</span>
+              <span style="height: 1.15em">SKILL.md</span>
+              <span style="height: 1.15em">CLAUDE.md</span>
+              <span style="height: 1.15em">spec.md</span>
+            </span>
+          </span>
+          <span>가 된다.</span>
+        </span>
+      </h1>
+
+      <p class="rise d4" style="margin: 32px 0 0; max-width: 620px; font-size: clamp(16px, 1.6vw, 19px); line-height: 1.7; color: #B4B4BC">
+        채팅으로 몇 가지 질문에 답하면 기획 스펙, 작업자 규칙, 스킬 문서를 한 폴더로 묶어 드립니다. 받은 폴더를 그대로 Claude Code에 넘기면 끝.
+      </p>
+
+      <div class="rise d5 field" style="margin-top: 40px; max-width: 860px; display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 10px 10px 10px 22px; border: 1.5px solid #2E2E36; border-radius: 20px; background: #111115; transition: border-color .2s">
+        <label for="idea" style="font-family: 'JetBrains Mono', monospace; font-size: 15px; color: var(--ac)">&gt;</label>
+        <input id="idea" value="{{idea}}" onChange="{{onIdea}}" onKeyDown="{{onIdeaKey}}" placeholder="예: 우리 동네 헬스장 PT 예약 앱" style="flex: 1 1 260px; min-width: 0; min-height: 52px; border: 0; background: transparent; color: #F2F2F0; font: 500 clamp(16px, 1.7vw, 20px) 'Noto Sans KR', sans-serif">
+        <button class="btn go" onClick="{{start}}" style="min-height: 52px; padding: 0 26px; border: 0; border-radius: 13px; background: var(--ac); color: #0A0A0C; font: 700 16px 'Noto Sans KR', sans-serif; display: inline-flex; align-items: center; gap: 10px">
+          설계 시작
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"></path></svg>
+        </button>
+      </div>
+
+      <div class="rise d6" style="margin-top: 18px; display: flex; flex-wrap: wrap; align-items: center; gap: 8px">
+        <span style="font-size: 13px; color: #8E8E98; margin-right: 4px">이런 것도 돼요</span>
+        <sc-for list="{{examples}}" as="ex" hint-placeholder-count="4">
+          <button class="btn chip" onClick="{{ex.pick}}" style="min-height: 44px; padding: 0 16px; border: 1px solid #2E2E36; border-radius: 999px; background: transparent; color: #DADAE0; font: 500 14px 'Noto Sans KR', sans-serif">{{ex.label}}</button>
+        </sc-for>
+      </div>
+
+      <div class="rise d6" style="margin-top: 88px; display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1px; background: #1F1F25; border: 1px solid #1F1F25; border-radius: 18px; overflow: hidden">
+        <sc-for list="{{how}}" as="h" hint-placeholder-count="3">
+          <div style="background: #0E0E11; padding: 28px; display: flex; flex-direction: column; gap: 12px">
+            <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--ac)">{{h.n}}</span>
+            <span style="font-size: 20px; font-weight: 700; letter-spacing: -0.02em">{{h.t}}</span>
+            <span style="font-size: 14px; line-height: 1.65; color: #A2A2AB">{{h.d}}</span>
+          </div>
+        </sc-for>
+      </div>
+    </main>
+
+    <div aria-hidden="true" style="position: relative; z-index: 1; margin-top: 24px; border-top: 1px solid #1F1F25; border-bottom: 1px solid #1F1F25; background: var(--ac); color: #0A0A0C; overflow: hidden; padding: 16px 0">
+      <div class="marq" style="display: flex; width: max-content; gap: 48px; font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 22px; letter-spacing: -0.01em; white-space: nowrap">
+        <sc-for list="{{marquee}}" as="mq" hint-placeholder-count="12">
+          <span style="display: inline-flex; align-items: center; gap: 48px">{{mq}}<span style="width: 10px; height: 10px; background: #0A0A0C; transform: rotate(45deg)"></span></span>
+        </sc-for>
+      </div>
+    </div>
+  </sc-if>
+
+  <!-- ================= STUDIO ================= -->
+  <sc-if value="{{isStudio}}" hint-placeholder-val="{{ false }}">
+    <main style="position: relative; z-index: 1; max-width: 1360px; margin: 0 auto; padding: 28px clamp(16px, 3vw, 40px) 40px; display: flex; flex-wrap: wrap; gap: 20px; align-items: stretch">
+
+      <section aria-label="인터뷰" style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column; border: 1px solid #23232A; border-radius: 22px; background: #0E0E11; overflow: hidden; min-height: 820px">
+        <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding: 18px 22px; border-bottom: 1px solid #1F1F25">
+          <div style="display: flex; flex-direction: column; gap: 4px; min-width: 0">
+            <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #8E8E98; letter-spacing: .08em">PROJECT</span>
+            <span style="font-size: 17px; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap">{{ideaShown}}</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 12px; flex: 0 1 260px">
+            <div style="flex: 1; height: 6px; border-radius: 99px; background: #1F1F25; overflow: hidden">
+              <div class="bar" style="height: 100%; border-radius: 99px; background: var(--ac); width: {{progress}}"></div>
+            </div>
+            <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #DADAE0">{{progressLabel}}</span>
+          </div>
+        </div>
+
+        <div style="flex: 1; min-height: 360px; overflow-y: auto; display: flex; flex-direction: column-reverse; padding: 24px 22px">
+          <div style="display: flex; flex-direction: column; gap: 14px">
+            <sc-for list="{{messages}}" as="m" hint-placeholder-count="3">
+              <sc-if value="{{m.bot}}" hint-placeholder-val="{{ true }}">
+                <div class="msg" style="display: flex; gap: 12px; align-items: flex-start; max-width: 82%">
+                  <div style="flex: none; width: 32px; height: 32px; border-radius: 9px; background: #1C1C22; border: 1px solid #2E2E36; display: grid; place-items: center; font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--ac)">SB</div>
+                  <div style="padding: 13px 17px; border-radius: 4px 16px 16px 16px; background: #18181D; font-size: 15px; line-height: 1.65; white-space: pre-line">{{m.text}}</div>
+                </div>
+              </sc-if>
+              <sc-if value="{{m.me}}" hint-placeholder-val="{{ false }}">
+                <div class="msg" style="align-self: flex-end; max-width: 78%; padding: 13px 17px; border-radius: 16px 4px 16px 16px; background: #F2F2F0; color: #0A0A0C; font-size: 15px; font-weight: 500; line-height: 1.6">{{m.text}}</div>
+              </sc-if>
+            </sc-for>
+            <sc-if value="{{typing}}" hint-placeholder-val="{{ false }}">
+              <div class="msg" style="display: flex; gap: 12px; align-items: center">
+                <div style="width: 32px; height: 32px; border-radius: 9px; background: #1C1C22; border: 1px solid #2E2E36; display: grid; place-items: center; font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--ac)">SB</div>
+                <div style="display: flex; gap: 5px; padding: 16px 18px; border-radius: 4px 16px 16px 16px; background: #18181D" aria-label="입력 중"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
+              </div>
+            </sc-if>
+          </div>
+        </div>
+
+        <div style="border-top: 1px solid #1F1F25; padding: 18px 22px 22px; background: #0B0B0E">
+          <sc-if value="{{canAnswer}}" hint-placeholder-val="{{ true }}">
+            <div style="display: flex; flex-direction: column; gap: 10px">
+              <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #8E8E98; letter-spacing: .08em">Q{{qNum}} · {{qKey}}</span>
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 8px">
+                <sc-for list="{{options}}" as="o" hint-placeholder-count="3">
+                  <button class="btn opt msg" onClick="{{o.pick}}" style="min-height: 56px; padding: 12px 14px; display: flex; align-items: center; gap: 12px; text-align: left; border: 1.5px solid {{o.border}}; border-radius: 14px; background: #111115; color: #F2F2F0; font: 500 14px 'Noto Sans KR', sans-serif; animation-delay: {{o.delay}}">
+                    <span class="num" style="flex: none; width: 26px; height: 26px; border-radius: 7px; background: #23232A; display: grid; place-items: center; font-family: 'JetBrains Mono', monospace; font-size: 12px; transition: background .18s, color .18s">{{o.n}}</span>
+                    <span style="flex: 1; line-height: 1.4">{{o.label}}</span>
+                    <sc-if value="{{o.rec}}" hint-placeholder-val="{{ false }}">
+                      <span style="flex: none; padding: 3px 8px; border-radius: 99px; background: var(--ac); color: #0A0A0C; font-size: 11px; font-weight: 700">추천</span>
+                    </sc-if>
+                  </button>
+                </sc-for>
+              </div>
+              <div class="field" style="display: flex; align-items: center; gap: 8px; padding: 6px 6px 6px 16px; border: 1.5px solid #2A2A31; border-radius: 14px; background: #111115; transition: border-color .2s">
+                <label for="custom" style="font-size: 13px; color: #8E8E98; white-space: nowrap">직접 입력</label>
+                <input id="custom" value="{{custom}}" onChange="{{onCustom}}" onKeyDown="{{onCustomKey}}" placeholder="선택지에 없으면 그냥 말해 주세요" style="flex: 1; min-width: 0; min-height: 44px; border: 0; background: transparent; color: #F2F2F0; font: 400 15px 'Noto Sans KR', sans-serif">
+                <button class="btn" onClick="{{sendCustom}}" aria-label="보내기" style="flex: none; width: 44px; height: 44px; border: 0; border-radius: 10px; background: #F2F2F0; color: #0A0A0C; display: grid; place-items: center">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5M6 11l6-6 6 6"></path></svg>
+                </button>
+              </div>
+            </div>
+          </sc-if>
+          <sc-if value="{{generating}}" hint-placeholder-val="{{ false }}">
+            <div style="display: flex; align-items: center; gap: 14px; min-height: 56px">
+              <svg class="spin" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--ac)" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M12 3a9 9 0 1 0 9 9"></path></svg>
+              <span style="font-size: 15px">산출물을 만드는 중 — <span style="font-family: 'JetBrains Mono', monospace; color: var(--ac)">{{genFile}}</span></span>
+            </div>
+          </sc-if>
+        </div>
+      </section>
+
+      <aside aria-label="산출물 미리보기" style="flex: 1 1 380px; min-width: 0; display: flex; flex-direction: column; gap: 20px">
+        <div style="border: 1px solid #23232A; border-radius: 22px; background: #0E0E11; overflow: hidden; position: relative">
+          <sc-if value="{{generating}}" hint-placeholder-val="{{ false }}">
+            <div aria-hidden="true" class="scan" style="position: absolute; left: 0; right: 0; top: 0; height: 25%; background: linear-gradient(180deg, transparent, rgba(212,255,58,.08), transparent); pointer-events: none"></div>
+          </sc-if>
+          <div style="display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; border-bottom: 1px solid #1F1F25">
+            <span style="display: flex; align-items: center; gap: 10px; font-family: 'JetBrains Mono', monospace; font-size: 13px">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--ac)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path></svg>
+              {{slug}}/
+            </span>
+            <span style="font-size: 12px; color: #8E8E98">{{doneCount}} / 5 완료</span>
+          </div>
+          <ul style="list-style: none; margin: 0; padding: 8px">
+            <sc-for list="{{files}}" as="f" hint-placeholder-count="5">
+              <li class="file {{f.cls}}" style="display: flex; align-items: center; gap: 12px; padding: 12px; border-radius: 12px; animation-delay: {{f.delay}}">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="{{f.ic}}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"></path><path d="M14 3v5h5"></path></svg>
+                <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px">
+                  <span style="font-family: 'JetBrains Mono', monospace; font-size: 14px; font-weight: 600">{{f.name}}</span>
+                  <span style="font-size: 12px; color: #8E8E98">{{f.desc}}</span>
+                </div>
+                <span style="{{f.pill}}">{{f.status}}</span>
+              </li>
+            </sc-for>
+          </ul>
+        </div>
+
+        <div style="flex: 1; min-height: 300px; border: 1px solid #23232A; border-radius: 22px; background: #0E0E11; display: flex; flex-direction: column; overflow: hidden">
+          <div style="display: flex; align-items: center; gap: 8px; padding: 14px 20px; border-bottom: 1px solid #1F1F25">
+            <span style="width: 10px; height: 10px; border-radius: 50%; background: #2E2E36"></span>
+            <span style="width: 10px; height: 10px; border-radius: 50%; background: #2E2E36"></span>
+            <span style="width: 10px; height: 10px; border-radius: 50%; background: #2E2E36"></span>
+            <span style="margin-left: 8px; font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #A2A2AB">spec.md — 실시간 작성</span>
+          </div>
+          <div style="padding: 20px 22px; font-family: 'JetBrains Mono', 'Noto Sans KR', monospace; font-size: 13px; line-height: 1.85; overflow: auto">
+            <sc-for list="{{specLines}}" as="ln" hint-placeholder-count="4">
+              <div class="msg" style="{{ln.style}}">{{ln.text}}</div>
+            </sc-for>
+            <span class="caret" style="display: inline-block; width: 8px; height: 16px; background: var(--ac); vertical-align: middle"></span>
+          </div>
+        </div>
+      </aside>
+    </main>
+  </sc-if>
+
+  <!-- ================= DONE ================= -->
+  <sc-if value="{{isDone}}" hint-placeholder-val="{{ false }}">
+    <main style="position: relative; z-index: 1; max-width: 1280px; margin: 0 auto; padding: clamp(40px, 7vw, 88px) clamp(16px, 4vw, 48px) 64px; display: flex; flex-wrap: wrap; gap: 48px; align-items: flex-start">
+      <div style="flex: 999 1 520px; min-width: 0">
+        <p class="rise" style="margin: 0 0 20px; font-family: 'JetBrains Mono', monospace; font-size: 13px; color: var(--ac)">● BUILD COMPLETE · 5 FILES</p>
+        <h1 style="margin: 0; font-family: 'Space Grotesk', 'Noto Sans KR', sans-serif; font-weight: 900; font-size: clamp(44px, 7vw, 104px); line-height: 1.02; letter-spacing: -0.045em">
+          <span class="rise d1" style="display: block">설계도 완성.</span>
+          <span class="rise d2" style="display: block; color: #5E5E68">이제 넘기기만</span>
+          <span class="rise d3" style="display: block; color: #5E5E68">하면 돼요.</span>
+        </h1>
+
+        <div class="rise d4" style="margin-top: 40px; display: flex; flex-wrap: wrap; gap: 12px">
+          <button class="btn go" onClick="{{download}}" style="min-height: 60px; padding: 0 30px; border: 0; border-radius: 16px; background: var(--ac); color: #0A0A0C; font: 700 17px 'Noto Sans KR', sans-serif; display: inline-flex; align-items: center; gap: 12px">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"></path></svg>
+            {{dlLabel}}
+          </button>
+          <a class="btn ghost" href="Review.dc.html" style="min-height: 60px; padding: 0 24px; border: 1.5px solid #2E2E36; border-radius: 16px; color: #F2F2F0; text-decoration: none; font: 500 16px 'Noto Sans KR', sans-serif; display: inline-flex; align-items: center; gap: 10px">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+            미리보기·수정
+          </a>
+          <button class="btn ghost" onClick="{{restart}}" style="min-height: 60px; padding: 0 24px; border: 1.5px solid #2E2E36; border-radius: 16px; background: transparent; color: #F2F2F0; font: 500 16px 'Noto Sans KR', sans-serif">새 프로젝트</button>
+        </div>
+
+        <ol class="rise d5" style="list-style: none; margin: 56px 0 0; padding: 0; display: flex; flex-direction: column; gap: 10px; max-width: 640px">
+          <sc-for list="{{steps}}" as="st" hint-placeholder-count="3">
+            <li style="display: flex; gap: 16px; align-items: center; padding: 16px 18px; border: 1px solid #23232A; border-radius: 14px; background: #0E0E11">
+              <span style="flex: none; width: 30px; height: 30px; border-radius: 50%; border: 1.5px solid var(--ac); color: var(--ac); display: grid; place-items: center; font-family: 'JetBrains Mono', monospace; font-size: 13px">{{st.n}}</span>
+              <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px">
+                <span style="font-size: 14px; color: #B4B4BC">{{st.t}}</span>
+                <code style="font-family: 'JetBrains Mono', monospace; font-size: 14px; color: #F2F2F0; overflow-x: auto; white-space: nowrap">{{st.c}}</code>
+              </div>
+            </li>
+          </sc-for>
+        </ol>
+      </div>
+
+      <div class="rise d3" style="flex: 1 1 360px; min-width: 0; border: 1px solid #23232A; border-radius: 22px; background: #0E0E11; overflow: hidden">
+        <div style="padding: 18px 22px; border-bottom: 1px solid #1F1F25; display: flex; align-items: center; justify-content: space-between">
+          <span style="font-family: 'JetBrains Mono', monospace; font-size: 13px">{{slug}}.zip</span>
+          <span style="font-size: 12px; color: #8E8E98">산출물</span>
+        </div>
+        <ul style="list-style: none; margin: 0; padding: 8px">
+          <sc-for list="{{files}}" as="f" hint-placeholder-count="5">
+            <li class="file" style="display: flex; align-items: center; gap: 12px; padding: 13px 14px; border-radius: 12px; animation-delay: {{f.delay}}">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--ac)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"></path><path d="M14 3v5h5"></path></svg>
+              <span style="flex: 1; font-family: 'JetBrains Mono', monospace; font-size: 14px">{{f.name}}</span>
+              <span style="font-size: 12px; color: #8E8E98">{{f.desc}}</span>
+            </li>
+          </sc-for>
+        </ul>
+        <div style="margin: 8px; padding: 18px; border-radius: 14px; background: #08080A; border: 1px solid #1F1F25; font-family: 'JetBrains Mono', 'Noto Sans KR', monospace; font-size: 12.5px; line-height: 1.8; color: #B4B4BC; max-height: 260px; overflow: auto">
+          <sc-for list="{{specLines}}" as="ln" hint-placeholder-count="4">
+            <div style="{{ln.style}}">{{ln.text}}</div>
+          </sc-for>
+        </div>
+      </div>
+    </main>
+  </sc-if>
+</div>
+</x-dc>
+
+<script type="text/x-dc" data-dc-script data-props='{"accent":{"editor":"color","default":"#D4FF3A","options":["#D4FF3A","#FF6B2C","#7CC7FF","#F2F2F0"]},"$preview":{"width":1440,"height":980}}'>
+class Component extends DCLogic {
+  componentWillUnmount() { (this._t || []).forEach(clearTimeout); }
+
+  later(fn, ms) { this._t = this._t || []; this._t.push(setTimeout(fn, ms)); }
+
+  qs() {
+    return [
+      { k: '사용자', q: '이 프로그램은 누가 쓰나요?', opts: ['나 혼자', '우리 팀·회사 사람들', '처음 보는 외부 고객'], rec: 1 },
+      { k: '환경', q: '주로 어디서 열어 보나요?', opts: ['PC 웹 브라우저', '휴대폰', '둘 다 비슷하게'], rec: 2 },
+      { k: '핵심 기능', q: '딱 하나만 먼저 된다면, 무엇이 돼야 하나요?', opts: ['정보를 입력하고 목록으로 보기', '다른 사람에게 공유·알림', '예약이나 결제 받기'], rec: 0 },
+      { k: '위임 범위', q: '개발 결정은 작업자에게 얼마나 맡길까요?', opts: ['기술 선택은 전부 알아서', '중요한 것만 물어보기', '단계마다 확인받기'], rec: 1 }
+    ];
+  }
+
+  st() {
+    return Object.assign({ screen: 'home', idea: '', custom: '', step: 0, answers: [], messages: [], typing: false, gen: -1, downloaded: false }, this.state);
+  }
+
+  begin() {
+    const s = this.st();
+    const idea = (s.idea || '').trim() || '우리 동네 헬스장 PT 예약 앱';
+    const q = this.qs()[0];
+    this.setState({ screen: 'studio', idea, step: 0, answers: [], gen: -1, typing: true,
+      messages: [{ bot: true, text: '좋아요, “' + idea + '”.\n스펙으로 옮기기 전에 네 가지만 물어볼게요.' }] });
+    this.later(() => this.setState({ typing: false, messages: this.st().messages.concat([{ bot: true, text: q.q }]) }), 850);
+  }
+
+  answer(text) {
+    const s = this.st();
+    if (s.typing || s.step >= this.qs().length || !text) return;
+    const QS = this.qs();
+    const q = QS[s.step];
+    const step = s.step + 1;
+    this.setState({ custom: '', step, typing: true,
+      answers: s.answers.concat([{ k: q.k, v: text }]),
+      messages: s.messages.concat([{ me: true, text }]) });
+    this.later(() => {
+      const cur = this.st();
+      if (step < QS.length) {
+        this.setState({ typing: false, messages: cur.messages.concat([{ bot: true, text: QS[step].q }]) });
+      } else {
+        this.setState({ typing: false, gen: 0, messages: cur.messages.concat([{ bot: true, text: '충분해요. 이제 산출물을 만들게요.\n작업자가 추가 질문 없이 만들 수 있게 정리하는 중입니다.' }]) });
+        [1, 2, 3, 4, 5].forEach((n) => this.later(() => this.setState({ gen: n }), 650 * n));
+        this.later(() => this.setState({ screen: 'done' }), 650 * 5 + 900);
+      }
+    }, 800);
+  }
+
+  renderVals() {
+    const s = this.st();
+    const QS = this.qs();
+    const ac = this.props.accent ?? '#D4FF3A';
+    const slug = 'my-spec-project';
+    const generating = s.screen === 'studio' && s.gen >= 0;
+    const canAnswer = s.screen === 'studio' && s.gen < 0 && !s.typing && s.step < QS.length && s.messages.length > 1;
+    const q = QS[Math.min(s.step, QS.length - 1)];
+
+    const stageIdx = s.screen === 'home' ? 0 : s.screen === 'done' ? 3 : generating ? 2 : 1;
+    const stages = ['01 아이디어', '02 인터뷰', '03 생성', '04 다운로드'].map((label, i) => ({
+      label,
+      style: 'padding: 7px 12px; border-radius: 99px; transition: all .3s; ' + (i === stageIdx
+        ? 'background: ' + ac + '; color: #0A0A0C; font-weight: 600'
+        : i < stageIdx ? 'color: #F2F2F0; border: 1px solid #2E2E36' : 'color: #6E6E78; border: 1px solid #1F1F25')
+    }));
+
+    const FILES = [
+      { name: 'spec.md', desc: '요구사항 스펙' },
+      { name: 'AGENTS.md', desc: '작업자 규칙 · 작업자 컨텍스트' },
+      { name: 'CLAUDE.md', desc: '@AGENTS.md 임포트' },
+      { name: 'SKILL.md', desc: '반복 작업 스킬' },
+      { name: 'run.json', desc: '생성 기록' }
+    ];
+    let doneCount = 0;
+    const files = FILES.map((f, i) => {
+      let status = '대기';
+      if (s.screen === 'done' || (generating && i < s.gen)) status = '완료';
+      else if (generating && i === s.gen) status = '작성 중';
+      else if (!generating && i === 0 && s.step >= 1) status = '작성 중';
+      if (status === '완료') doneCount++;
+      const pillBase = 'flex: none; padding: 4px 10px; border-radius: 99px; font-size: 11px; font-weight: 700; font-family: JetBrains Mono, Noto Sans KR, monospace; ';
+      const pill = status === '완료' ? pillBase + 'background: ' + ac + '; color: #0A0A0C'
+        : status === '작성 중' ? pillBase + 'background: #F2F2F0; color: #0A0A0C'
+        : pillBase + 'color: #8E8E98; border: 1px solid #2A2A31';
+      return { ...f, status, pill, cls: status === '완료' && s.screen !== 'done' ? 'flash' : '',
+        ic: status === '대기' ? '#5E5E68' : ac, delay: (i * 0.08) + 's' };
+    });
+
+    const genFile = generating ? (FILES[Math.min(s.gen, 4)].name) : '';
+
+    const specLines = [{ text: '# ' + (s.idea || '새 프로젝트'), style: 'color: #F2F2F0; font-weight: 600; font-size: 15px; margin-bottom: 6px' },
+      { text: '## 개요', style: 'color: ' + ac + '; margin-top: 4px' }];
+    s.answers.forEach((a) => specLines.push({ text: '- ' + a.k + ': ' + a.v, style: 'color: #DADAE0' }));
+    if (s.answers.length >= 3) specLines.push({ text: '## 필수 기능 (MVP)', style: 'color: ' + ac + '; margin-top: 10px' },
+      { text: '1. ' + s.answers[2].v, style: 'color: #DADAE0' });
+    if (generating || s.screen === 'done') specLines.push({ text: '## 수용 기준', style: 'color: ' + ac + '; margin-top: 10px' },
+      { text: '- [ ] 핵심 흐름이 끝까지 동작한다', style: 'color: #DADAE0' },
+      { text: '- [ ] 작업자는 추가 질문 없이 구현한다', style: 'color: #DADAE0' });
+
+    const pct = s.screen === 'done' ? 100 : generating ? 60 + s.gen * 8 : Math.round((s.step / QS.length) * 60);
+
+    const set = (k) => (e) => this.setState({ [k]: e.target.value });
+
+    return {
+      accent: ac,
+      isHome: s.screen === 'home', isStudio: s.screen === 'studio', isDone: s.screen === 'done',
+      stages, idea: s.idea, ideaShown: s.idea, custom: s.custom, slug,
+      onIdea: set('idea'), onCustom: set('custom'),
+      onIdeaKey: (e) => { if (e.key === 'Enter' && !e.nativeEvent?.isComposing) this.begin(); },
+      onCustomKey: (e) => { if (e.key === 'Enter' && !e.nativeEvent?.isComposing) this.answer((this.st().custom || '').trim()); },
+      start: () => this.begin(),
+      sendCustom: () => this.answer((this.st().custom || '').trim()),
+      examples: ['사내 회의실 예약', '반려견 산책 기록 앱', '팀 점심 투표 봇', '중고책 거래 게시판'].map((label) => ({ label, pick: () => this.setState({ idea: label }) })),
+      how: [
+        { n: '01 / 말하기', t: '아이디어 한 줄', d: '전문 용어 없이 만들고 싶은 걸 적어요. 막연해도 괜찮아요.' },
+        { n: '02 / 답하기', t: '골라서 답하는 인터뷰', d: '번호 버튼과 추천 표시로 빠르게. 선택지에 없으면 직접 입력.' },
+        { n: '03 / 넘기기', t: '폴더째 Claude Code로', d: 'spec.md · AGENTS.md · SKILL.md가 담긴 폴더를 받아 그대로 실행.' }
+      ],
+      marquee: ['spec.md', 'AGENTS.md', 'SKILL.md', 'CLAUDE.md', 'run.json', 'Claude Code', 'Codex', 'spec.md', 'AGENTS.md', 'SKILL.md', 'CLAUDE.md', 'run.json', 'Claude Code', 'Codex'],
+      messages: s.messages.map((m) => ({ bot: !!m.bot, me: !!m.me, text: m.text })),
+      typing: s.typing, canAnswer, generating, genFile,
+      qNum: Math.min(s.step + 1, QS.length), qKey: q.k,
+      options: q.opts.map((label, i) => ({ label, n: i + 1, rec: i === q.rec, delay: (i * 0.06) + 's',
+        border: i === q.rec ? ac : '#2A2A31', pick: () => this.answer(label) })),
+      progress: pct + '%', progressLabel: pct + '%',
+      files, doneCount, specLines,
+      dlLabel: s.downloaded ? '다운로드 완료 — 다시 받기' : slug + '.zip 다운로드',
+      download: () => this.setState({ downloaded: true }),
+      restart: () => { (this._t || []).forEach(clearTimeout); this.setState({ screen: 'home', idea: '', step: 0, answers: [], messages: [], gen: -1, typing: false, downloaded: false }); },
+      steps: [
+        { n: 1, t: '압축을 풀고 폴더로 이동', c: 'unzip ' + slug + '.zip && cd ' + slug },
+        { n: 2, t: 'Claude Code 실행', c: 'claude' },
+        { n: 3, t: '이렇게 한 마디만', c: '"spec.md 대로 만들어줘"' }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

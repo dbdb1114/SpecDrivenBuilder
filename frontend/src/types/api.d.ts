@@ -245,6 +245,22 @@ export interface components {
             /** Menu */
             menu: string[];
         };
+        /**
+         * QA
+         * @description 실행 기록용 문답 한 줄. LLM 입력과 run.json 에 쓴다.
+         */
+        QA: {
+            /** Node */
+            node: string;
+            /** Round */
+            round: number;
+            /** Item Id */
+            item_id: string;
+            /** Question */
+            question: string;
+            /** Answer */
+            answer: string;
+        };
         /** Question */
         Question: {
             /** Id */
@@ -290,6 +306,10 @@ export interface components {
              * @enum {string}
              */
             status: "question" | "confirm" | "stalled" | "done";
+            /** Request */
+            request: string;
+            /** Qa */
+            qa: components["schemas"]["QA"][];
             bundle: components["schemas"]["QuestionBundle"] | null;
             confirm: components["schemas"]["ConfirmScreen"] | null;
             /** Artifacts */
