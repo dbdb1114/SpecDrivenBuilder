@@ -4,6 +4,7 @@ from string import Template
 
 from specbuilder.common_skills import CommonSkill, load_common_skills
 from specbuilder.llm import LLMCallError, LLMClient
+from specbuilder.nodes.interview_design import PREVIEW_ITEM_ID
 from specbuilder.paths import TEMPLATES_DIR, load_prompt
 from specbuilder.registry.refs import PART_LABELS, parse_parts
 from specbuilder.state import Profile, SkillEntry, SpecItem, State
@@ -15,6 +16,11 @@ FOLDER_SECTIONS = ("구조", "명령어", "코드 규칙", "하지 말 것")
 # 루트 AGENTS.md 에서 폴더 구조도를 담는 섹션. 새로 쓰는 스킬이 가리킬 경로가 여기서 정해진다.
 STRUCTURE_SECTION = "구조"
 CLAUDE_IMPORT = "@AGENTS.md\n"
+# 스펙의 결정 두 절. 스펙 항목을 옮겨 적는 부분이라 LLM 이 아니라 빌더 코드가 쓴다 —
+# 출력 토큰이 줄고(산출물의 약 12%), 옮기다 빠뜨리거나 사용자의 답을 바꿔 적을 수 없다.
+USER_SECTION = "사용자가 정한 것"
+WORKER_SECTION = "작업자가 정하는 것"
+WORKER_LEAD = "이 절의 항목은 사용자에게 다시 묻지 않고 기본 방향대로 정한다."
 # 두 작업자가 같이 읽는 경로가 없다 — Claude Code 는 .claude/skills, Codex 는 .agents/skills 만 발견한다.
 # 그래서 같은 내용을 두 곳에 넣는다 (docs/design/design.md "select_skills").
 SKILL_DIRS = (".claude/skills", ".agents/skills")
@@ -149,6 +155,56 @@ def check_structure(files: dict[str, str], folders: list[str]) -> None:
         raise LLMCallError(f"AGENTS.md 구조도에 빠진 폴더: {missing}")
 
 
+def _spec_line(item: SpecItem) -> str:
+    # 기술 항목의 내용은 여러 줄(선택·버전·이유·검증)이다 — 항목 아래 목록으로 내려 적는다.
+    lines = [
+        line.strip() for line in item["content"].strip().splitlines() if line.strip()
+    ]
+    if len(lines) == 1:
+        return f"- {item['name']}: {lines[0]}"
+    return "\n".join([f"- {item['name']}", *(f"  - {line}" for line in lines)])
+
+
+def with_decisions(spec: str, items: list[SpecItem]) -> str:
+    """LLM 이 쓴 스펙 뒤에 결정 두 절을 스펙 항목에서 그대로 그려 붙인다.
+
+    LLM 은 "작업자가 정하는 것" 절에 기본 방향이 비어 있던 항목과 스스로 더 정한 기본값만 쓴다. 그 줄들은 절 끝에 잇는다.
+    """
+    added = (_section(spec, WORKER_SECTION) or "").replace(WORKER_LEAD, "").strip()
+    for title in (USER_SECTION, WORKER_SECTION):
+        spec = re.sub(
+            rf"^## {re.escape(title)}\b.*?(?=^## |\Z)",
+            "",
+            spec,
+            flags=re.MULTILINE | re.DOTALL,
+        )
+    # 기본 방향이 비어 있던 항목을 LLM 이 빠뜨려도 실행을 멈추지 않는다 — 작업자가 되묻지 않도록 정하는 쪽을 적어 둔다.
+    left = [
+        f"- {i['name']}: 정해진 방향이 없다. {USER_SECTION}에 맞는 기본값을 정하고 무엇으로 정했는지 한 줄로 알린다."
+        for i in items
+        if not _is_user_decision(i)
+        and not i["content"].strip()
+        and i["name"] not in added
+    ]
+    # "미리보기 확인: 맞아요" 는 빌더 화면의 확인 절차일 뿐 프로그램에 대한 결정이 아니다 — 작업자에게 줄 내용이 없다.
+    items = [i for i in items if i["id"] != PREVIEW_ITEM_ID]
+    user = [_spec_line(i) for i in items if _is_user_decision(i)]
+    worker = [
+        _spec_line(i)
+        for i in items
+        if not _is_user_decision(i) and i["content"].strip()
+    ]
+    return (
+        "\n".join(
+            [spec.rstrip(), "", f"## {USER_SECTION}", *(user or ["(없음)"])]
+            + ["", f"## {WORKER_SECTION}", WORKER_LEAD, "", *worker]
+            + ([added] if added else [])
+            + left
+        )
+        + "\n"
+    )
+
+
 def render_skill(skill: SkillEntry, body: str, template: str) -> str:
     """새로 쓰는 스킬의 SKILL.md 를 만든다. frontmatter 는 LLM 이 아니라 스킬 목록 값으로 채운다 — 필수 필드가 빠질 수 없다."""
     # LLM 이 본문 앞에 frontmatter 를 또 붙이면 두 겹이 돼 작업자가 스킬을 못 읽는다.
@@ -207,6 +263,7 @@ def make_generate_artifacts(llm: LLMClient):
         ]
         files = parse_files(llm.complete(system, render_context(state)), required)
         check_structure(files, folders)
+        files[SPEC_FILE] = with_decisions(files[SPEC_FILE], state["spec_items"])
         return {
             "artifacts": assemble(
                 skills, files, load_common_skills(), skill_template, folders

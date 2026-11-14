@@ -104,6 +104,61 @@ def test_splits_user_decisions_from_worker_decisions():
     assert "기본 방향 없음" in worker_part
 
 
+def test_spec_decision_sections_are_written_by_builder_not_llm():
+    """결정 두 절은 스펙 항목을 옮겨 적는 부분이다 — 코드가 그려서 출력 토큰을 줄이고 사용자의 답이 바뀌지 않게 한다."""
+    state = state_with(BUILD)
+    state["spec_items"] = [
+        item("purpose", content="혼자 씀"),
+        item("share", "delegated", ""),
+        item("login", "delegated", ""),
+        item("storage", "delegated", "파일 하나에 저장", decided_by="worker"),
+        item(
+            "tech-1",
+            "delegated",
+            "선택: Flask\n버전: (pypi: flask@3.1.0)",
+            "worker",
+            "tech",
+        ),
+        # 빌더 화면의 확인 절차는 프로그램에 대한 결정이 아니라서 스펙에 싣지 않는다.
+        item("preview-check", content="맞아요", area="design"),
+    ]
+    spec = (
+        "# 스펙\n\n## 목적\n가계부.\n\n"
+        "## 사용자가 정한 것\n- purpose 항목: LLM 이 바꿔 적음\n\n"
+        "## 작업자가 정하는 것\n이 절의 항목은 사용자에게 다시 묻지 않고 기본 방향대로 정한다.\n\n"
+        "- share 항목: 나누는 기능은 넣지 않는다.\n- 비밀번호 보관: 환경 변수에 둔다."
+    )
+    llm = FakeLLM({"generate_artifacts": [files_reply(**{"docs/spec.md": spec})]})
+
+    result = make_generate_artifacts(llm)(state)["artifacts"]["docs/spec.md"]
+
+    assert result == (
+        "# 스펙\n\n## 목적\n가계부.\n\n"
+        "## 사용자가 정한 것\n"
+        "- purpose 항목: 혼자 씀\n\n"
+        "## 작업자가 정하는 것\n"
+        "이 절의 항목은 사용자에게 다시 묻지 않고 기본 방향대로 정한다.\n\n"
+        "- storage 항목: 파일 하나에 저장\n"
+        "- tech-1 항목\n  - 선택: Flask\n  - 버전: (pypi: flask@3.1.0)\n"
+        # LLM 이 정한 것: 기본 방향이 비어 있던 항목과 스스로 더 정한 기본값.
+        "- share 항목: 나누는 기능은 넣지 않는다.\n- 비밀번호 보관: 환경 변수에 둔다.\n"
+        # LLM 이 빠뜨린 빈 항목은 작업자가 되묻지 않도록 정하는 쪽을 적어 둔다.
+        "- login 항목: 정해진 방향이 없다. 사용자가 정한 것에 맞는 기본값을 정하고 무엇으로 정했는지 한 줄로 알린다.\n"
+    )
+
+
+def test_spec_without_llm_decision_section_still_gets_both_sections():
+    state = state_with(BUILD)
+    state["spec_items"] = [item("purpose", content="혼자 씀")]
+
+    spec = make_generate_artifacts(FakeLLM())(state)["artifacts"]["docs/spec.md"]
+
+    assert spec.startswith(
+        "# 스펙\n\n가계부 프로그램.\n\n## 사용자가 정한 것\n- purpose 항목: 혼자 씀\n"
+    )
+    assert "## 작업자가 정하는 것\n이 절의 항목은" in spec
+
+
 def test_missing_file_raises():
     llm = FakeLLM({"generate_artifacts": ["=== FILE: docs/spec.md ===\n스펙만 있음"]})
     with pytest.raises(LLMCallError, match="AGENTS.md"):
