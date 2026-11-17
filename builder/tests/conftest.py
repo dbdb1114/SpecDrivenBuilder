@@ -18,6 +18,14 @@ def _no_real_registry(monkeypatch):
     monkeypatch.setattr(urllib.request, "urlopen", blocked)
 
 
+@pytest.fixture(autouse=True)
+def node_config_file(tmp_path, monkeypatch):
+    # 레포의 config/nodes.json 을 누가 고쳐도(백오피스 포함) 테스트 결과가 달라지지 않게 한다. 기본은 파일 없음 = 모든 노드 기본값.
+    path = tmp_path / "nodes.json"
+    monkeypatch.setattr("specbuilder.node_config.CONFIG_FILE", path)
+    return path
+
+
 SAVED_PROFILE = {
     "domain": "사무·행정·회계",
     "tech_exposure": "셋 다 해 본 적 없어요",
