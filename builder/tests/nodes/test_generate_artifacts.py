@@ -147,6 +147,18 @@ def test_spec_decision_sections_are_written_by_builder_not_llm():
     )
 
 
+def test_typed_preview_feedback_stays_in_spec():
+    """미리보기 확인에 직접 적은 답은 확인 절차가 아니라 사용자의 요구다 — "맞아요" 만 뺀다."""
+    state = state_with(BUILD)
+    state["spec_items"] = [
+        item("preview-check", content="차트가 더 있으면 좋겠어요", area="design")
+    ]
+
+    spec = make_generate_artifacts(FakeLLM())(state)["artifacts"]["docs/spec.md"]
+
+    assert "- preview-check 항목: 차트가 더 있으면 좋겠어요" in spec
+
+
 def test_spec_without_llm_decision_section_still_gets_both_sections():
     state = state_with(BUILD)
     state["spec_items"] = [item("purpose", content="혼자 씀")]

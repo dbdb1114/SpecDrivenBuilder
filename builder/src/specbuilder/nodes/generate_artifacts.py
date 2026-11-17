@@ -4,7 +4,7 @@ from string import Template
 
 from specbuilder.common_skills import CommonSkill, load_common_skills
 from specbuilder.llm import LLMCallError, LLMClient
-from specbuilder.nodes.interview_design import PREVIEW_ITEM_ID
+from specbuilder.nodes.interview_design import PREVIEW_ITEM_ID, PREVIEW_OK
 from specbuilder.paths import TEMPLATES_DIR, load_prompt
 from specbuilder.registry.refs import PART_LABELS, parse_parts
 from specbuilder.state import Profile, SkillEntry, SpecItem, State
@@ -186,8 +186,13 @@ def with_decisions(spec: str, items: list[SpecItem]) -> str:
         and not i["content"].strip()
         and i["name"] not in added
     ]
-    # "미리보기 확인: 맞아요" 는 빌더 화면의 확인 절차일 뿐 프로그램에 대한 결정이 아니다 — 작업자에게 줄 내용이 없다.
-    items = [i for i in items if i["id"] != PREVIEW_ITEM_ID]
+    # "미리보기 확인: 맞아요" 는 빌더 화면의 확인 절차일 뿐 프로그램에 대한 결정이 아니다.
+    # 직접 적은 답("차트가 더 있으면 좋겠다")은 사용자의 요구이므로 그대로 싣는다.
+    items = [
+        i
+        for i in items
+        if not (i["id"] == PREVIEW_ITEM_ID and i["content"].strip() == PREVIEW_OK)
+    ]
     user = [_spec_line(i) for i in items if _is_user_decision(i)]
     worker = [
         _spec_line(i)
