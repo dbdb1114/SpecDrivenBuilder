@@ -117,6 +117,23 @@ def test_missing_info_already_answered_is_not_asked_again():
     assert "stack_returns" not in result.update
 
 
+def test_unaskable_missing_info_without_items_decides_with_defaults():
+    """부족한 정보만 내고 기술 항목을 비웠는데 그 정보를 물을 수 없으면(이미 답이 있음), 멈추지 않고 기본값으로 다시 정하게 한다."""
+    llm = FakeLLM(
+        {
+            "select_stack": [
+                stack_reply([], [{"id": "purpose", "name": "용도"}]),
+                stack_reply([tech("runtime", [package("eol", "nodejs", "24")])], []),
+            ]
+        }
+    )
+    result = make_select_stack(llm)(_state())
+
+    assert result.goto == "verify_stack"
+    first, second = llm.calls_for("select_stack")
+    assert first.rstrip().endswith("예") and second.rstrip().endswith("아니오")
+
+
 def test_at_return_limit_missing_info_is_ignored_and_defaults_are_used():
     llm = FakeLLM(
         {
