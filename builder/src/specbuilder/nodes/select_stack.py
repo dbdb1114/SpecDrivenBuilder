@@ -195,6 +195,12 @@ def make_select_stack(llm: LLMClient):
                 goto=BACK,
             )
 
+        if not reply["items"] and reply["missing"]:
+            # 프롬프트는 부족한 정보가 있으면 기술 항목을 비우게 한다(버려질 출력을 쓰지 않게). 그런데 그 정보가 이미 답이 있거나
+            # 돌아갈 횟수를 다 썼으면 돌아가지 못하고 기술 항목도 없다 — 멈추는 대신 "다시 물을 수 없다"로 한 번 더 호출해 기본값으로 정하게 한다.
+            reply = _parse_reply(
+                llm.complete(system, render_context(state, False), schema)
+            )
         if not reply["items"]:
             raise LLMCallError(f"{NODE}: 기술 스펙 항목도 부족한 정보도 없음")
         # 기술 항목은 통째로 다시 정한다 — merge_updates 는 기존 항목을 덮지 않아 버전을 고칠 수 없다.
