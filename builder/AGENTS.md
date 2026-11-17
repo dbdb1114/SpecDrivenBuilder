@@ -12,6 +12,7 @@ src/specbuilder/     코드 패키지 (src 레이아웃 — graph·state·llm �
   llm/               LLM 클라이언트 래퍼 — 노드는 여기만 통해서 호출
   api/               FastAPI 라우터 (`/api/**`) — 그래프를 HTTP 로 노출만 함, 로직 없음
   paths.py           builder/ 기준 데이터 디렉토리 경로
+config/       노드별 설정 (nodes.json — 모델 · effort)
 prompts/      노드별 시스템 프롬프트 (.md) — 코드에 하드코딩 금지
 templates/    산출물 템플릿 — SKILL.md(새로 쓰는 스킬의 서식), skills/<이름>/SKILL.md(공통 스킬. 폴더가 곧 목록)
 output/       생성 결과 — git 추적 안 함
@@ -43,6 +44,10 @@ LLM 호출 수단은 환경 변수 `SPECBUILDER_LLM` 으로 고른다 (`llm/clie
 uv run python -m specbuilder.llm.show_trace              # 가장 최근 실행의 호출별 토큰·비용 표
 uv run python -m specbuilder.llm.show_trace <run_id> --show 3   # 3번째 호출의 프롬프트와 응답 전문
 ```
+
+**노드별 모델·effort.** `config/nodes.json` 에 노드마다 `model` · `effort` 를 적으면 그 노드만 그 값으로 돈다 (`node_config.py`).
+`null` 이면 기본값. 호출할 때마다 다시 읽으므로 고치면 서버를 다시 띄우지 않아도 다음 호출부터 반영된다.
+형식이 틀리거나 모르는 노드 이름이 있으면 그 호출이 실패한다 — 기본값으로 조용히 돌지 않는다. 캐시는 모델별로 따로다.
 
 모델은 `SPECBUILDER_MODEL` (기본 `claude-sonnet-5-5`). `.env` 자동 로드는 없다 — `uv run --env-file .env <명령>` 으로 넘기거나 셸에서 export.
 키는 `.env` 에만 적는다 (커밋되지 않음). 변수를 추가하면 `.env.example` 을 갱신할 것.
