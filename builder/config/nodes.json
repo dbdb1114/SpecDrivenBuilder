@@ -1,0 +1,7 @@
+{
+  "interview_user": { "model": null, "effort": null },
+  "interview_design": { "model": null, "effort": null },
+  "select_stack": { "model": null, "effort": null },
+  "select_skills": { "model": null, "effort": null },
+  "generate_artifacts": { "model": null, "effort": null }
+}

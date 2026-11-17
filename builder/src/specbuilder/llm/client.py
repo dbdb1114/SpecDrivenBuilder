@@ -10,6 +10,7 @@ from typing import Protocol
 
 import anthropic
 
+from specbuilder import node_config
 from specbuilder.llm import trace
 
 DEFAULT_MODEL = "claude-sonnet-5-5"
@@ -28,6 +29,12 @@ logger = logging.getLogger(__name__)
 _node = contextvars.ContextVar("llm_node", default="-")
 # 방금 끝난 호출의 사용량. 감싼 클라이언트가 적어 두면 for_node 의 껍데기가 호출 기록에 싣는다.
 _usage = contextvars.ContextVar("llm_usage", default=None)
+# 지금 호출하는 노드의 설정(모델·effort). for_node 가 호출 동안만 적어 두고, 값이 없으면 클라이언트의 기본을 쓴다.
+_setting = contextvars.ContextVar("llm_setting", default=node_config.DEFAULT)
+
+
+def _model(default: str) -> str:
+    return _setting.get()["model"] or default
 
 
 class LLMCallError(Exception):
@@ -54,7 +61,7 @@ class ClaudeCLIClient:
         # 사용자 훅이 섞이면 같은 입력에 다른 출력이 나와 비교 실험이 무의미해진다.
         cmd = [
             "claude", "-p",
-            "--model", self.model,
+            "--model", _model(self.model),
             "--system-prompt", system,
             "--tools", "",
             "--setting-sources", "",
@@ -127,7 +134,8 @@ class AnthropicAPIClient:
         self._client = client or anthropic.Anthropic(timeout=timeout)
 
     def complete(self, system: str, prompt: str, schema: dict | None = None) -> str:
-        output_config = {"effort": API_EFFORT}
+        model = _model(self.model)
+        output_config = {"effort": _setting.get()["effort"] or API_EFFORT}
         if schema is not None:
             # pydantic 이 만든 스키마에는 API 가 받지 않는 키워드(oneOf, discriminator, 길이 제약 등)가 있다.
             # SDK 가 API 형식으로 바꿔 주고, 빠진 제약은 응답을 받은 뒤 노드의 pydantic 검증이 다시 본다.
@@ -136,7 +144,7 @@ class AnthropicAPIClient:
                 "schema": anthropic.transform_schema(schema),
             }
         params = {
-            "model": self.model,
+            "model": model,
             "max_tokens": API_MAX_TOKENS,
             # 노드 프롬프트는 호출마다 같다 — 캐시 표시를 붙이면 5분 안의 다음 호출부터 이 부분을 싸게 읽는다.
             # 캐시는 앞부분이 글자 하나까지 같아야 맞으므로 system 에는 바뀌는 값을 넣지 않는다 (바뀌는 것은 전부 prompt 로).
@@ -150,7 +158,7 @@ class AnthropicAPIClient:
             "messages": [{"role": "user", "content": prompt}],
             "output_config": output_config,
         }
-        if self.model in API_FALLBACK_MODELS:
+        if model in API_FALLBACK_MODELS:
             params |= {"betas": [API_FALLBACK_BETA], "fallbacks": "default"}
         started = time.monotonic()
         try:
@@ -169,7 +177,7 @@ class AnthropicAPIClient:
             ) from e
         except anthropic.APIConnectionError as e:
             raise LLMCallError(f"Claude API 연결 실패: {e}") from e
-        _log_usage(self.model, message, time.monotonic() - started)
+        _log_usage(model, message, time.monotonic() - started)
         if message.stop_reason == "refusal":
             raise LLMCallError("Claude API 가 요청을 거절함 (stop_reason: refusal)")
         if message.stop_reason == "max_tokens":
@@ -213,10 +221,20 @@ class _NodeClient:
         self.model = inner.model
 
     def complete(self, system: str, prompt: str, schema: dict | None = None) -> str:
+        try:
+            setting = node_config.setting(self._node_name)
+        except ValueError as e:
+            # 설정 파일이 틀리면 기본값으로 조용히 돌지 않는다 — 다른 모델로 돈 것을 모르고 결과를 믿게 된다.
+            raise LLMCallError(str(e)) from e
         token = _node.set(self._node_name)
+        setting_token = _setting.set(setting)
         _usage.set(None)
         started = time.monotonic()
-        call = {"node": self._node_name, "model": self.model}
+        call = {
+            "node": self._node_name,
+            "model": setting["model"] or self.model,
+            "effort": setting["effort"],
+        }
         try:
             call["response"] = self._inner.complete(system, prompt, schema)
             return call["response"]
@@ -225,6 +243,7 @@ class _NodeClient:
             raise
         finally:
             _node.reset(token)
+            _setting.reset(setting_token)
             # 기록은 SPECBUILDER_TRACE 가 켜져 있을 때만 남는다 (llm/trace.py).
             trace.record(
                 call

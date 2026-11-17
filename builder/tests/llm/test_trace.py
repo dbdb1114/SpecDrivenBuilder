@@ -47,6 +47,7 @@ def test_each_call_is_recorded_with_prompts(traces):
         "at": "",
         "node": "select_stack",
         "model": "claude-sonnet-5-5",
+        "effort": None,
         "response": "응답",
         "seconds": 0,
         "usage": None,
