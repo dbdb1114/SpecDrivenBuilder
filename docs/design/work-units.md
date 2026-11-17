@@ -33,8 +33,13 @@
 | H | `feat/common-items` | 공통 항목 목록과 첫 공통 항목 3개. `interview_user` · `interview_design` 이 해당하는 공통 항목을 고르고 빌더 코드가 고정 질문을 붙임 | 공통 항목 목록 파일, `nodes/interview_user.py`, `nodes/interview_design.py`, 두 프롬프트 | A~G |
 | I | `feat/preview-format` | `preview` 규격 확장(색 역할, 문구). 프론트엔드 레이아웃 틀 6개를 실제 화면처럼 다시 그림 | `state/question_format.py`, `nodes/interview_design.py`, `frontend/` 의 미리보기 | 프론트엔드 리디자인(`feat/frontend-redesign`), H |
 | J | `feat/artifact-structure` | 산출물의 폴더 구성: `docs/spec.md`, 고른 기술에 있는 부분만 `frontend/` · `backend/` · `database/` 의 `AGENTS.md`(구조·명령어·코드 규칙·하지 말 것) · `CLAUDE.md`, 루트 `AGENTS.md` 의 "구조" 섹션. `select_stack` 이 프로그램의 부분을 기술 스펙 항목에 밝힘 | `prompts/generate_artifacts.md`, `nodes/generate_artifacts.py`, `prompts/select_stack.md`, `nodes/select_stack.py`, 템플릿 스냅샷 테스트 | A~G |
+| K | `feat/node-config` | 노드 설정 파일 하나에 노드별 모델·effort·돌아가는 횟수 상한을 모음. 기본값은 지금 동작 그대로 | `llm/`, `graph/build.py`, 노드의 상한 상수 | — |
+| L | `feat/backoffice-traces` | 백오피스 뼈대(환경 변수로 켜는 라우터, 화면 틀)와 호출 기록 보기(실행별 호출·토큰·비용·전문), 노드 설정 보기·고치기 | `api/`, `frontend/` | K |
+| M | `feat/backoffice-catalogs` | 공통 항목·공통 스킬·색 조합을 화면에서 고침 | `api/`, `frontend/` | L, 색 조합 목록 |
+| N | `feat/backoffice-prompts` | 프롬프트 편집, git 과 달라진 부분 보기, 재생 비교 | `api/`, `frontend/`, `llm/trace.py` | L |
 
 - **H → I 는 순서대로.** 둘 다 `interview_design` 의 노드와 프롬프트를 고친다. J 는 H · I 와 동시에 할 수 있다.
+- **K → L → M · N.** M 과 N 은 L 뒤에 동시에 할 수 있다. 상세는 `backoffice.md`.
 - H · I · J 는 모두 프롬프트를 바꾸므로 품질 회귀 세트를 바꾸기 전과 후로 돌린다. J 는 산출물이 바뀌므로 실행 검증도 한다.
 
 ## 충돌을 줄이는 규칙
@@ -71,6 +76,10 @@
 | H | 공통 항목 목록의 저장 위치와 형식. 첫 공통 항목 3개의 질문 문구·선택지·기본 방향 |
 | I | 저장된 checkpoint 에 옛 `preview` 가 있을 때의 처리 |
 | J | 프로그램의 부분을 기술 스펙 항목에 적는 형식. 구조도의 깊이와 표기. `database/AGENTS.md` 에 담을 규칙의 범위. 완료 화면에 구조도를 보여 줄지 |
+| K | 노드 설정 파일의 위치와 형식. 어떤 값까지 설정으로 뺄지 |
+| L | 백오피스를 켜는 환경 변수 이름. 화면 주소 |
+| M | 색 조합 대비 기준. 공통 스킬을 화면에서 지울 수 있게 할지 |
+| N | 재생 비교의 기본 반복 횟수와 한 번에 보낼 호출 수 상한 |
 
 ## 세션에 주는 지시
 
