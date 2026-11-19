@@ -95,6 +95,7 @@ PREVIEW = {
         "primary": "#1E3A5F",
         "accent": "#4A90D9",
         "text": "#1B2430",
+        "on_accent": "#000000",
     },
     "texts": {
         "title": "가계부",
@@ -227,6 +228,13 @@ def test_confirm_screen_and_reply():
         confirm_reply_adapter.validate_python({"action": "revise", "item_ids": []})
     with pytest.raises(ValidationError):
         submission_adapter.validate_python({"action": "skip", "answers": []})
+
+
+def test_preview_without_on_accent_reads_as_no_picture():
+    """2026-11-17 이전 checkpoint 의 미리보기(on_accent 없음)는 그림만 뺀다 — 옛 목록 형식과 같은 처리."""
+    colors = {k: v for k, v in PREVIEW["colors"].items() if k != "on_accent"}
+    bundle = {**make_bundle(), "preview": {**PREVIEW, "colors": colors}}
+    assert bundle_adapter.validate_python(bundle)["preview"] is None
 
 
 def test_preview_colors_by_role_and_texts_fill_the_frame():

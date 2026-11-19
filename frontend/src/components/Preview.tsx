@@ -185,13 +185,14 @@ const FRAMES: Record<LayoutKey, (texts: Texts) => ReactNode> = {
 };
 
 export function Preview({ preview }: { preview: PreviewData }) {
-  const { background, surface, primary, accent, text } = preview.colors;
+  const { background, surface, primary, accent, text, on_accent } = preview.colors;
   const theme = {
     "--p-bg": background,
     "--p-surface": surface,
     "--p-primary": primary,
     "--p-accent": accent,
     "--p-text": text,
+    "--p-on-accent": on_accent,
   } as CSSProperties;
   return (
     <figure className={styles.figureBox} aria-label="미리보기">

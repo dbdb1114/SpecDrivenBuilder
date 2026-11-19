@@ -1,6 +1,7 @@
-/* 틀의 색은 전부 빌더가 준 역할 다섯 개에서 나온다:
-   --p-bg(바탕) · --p-surface(카드·목록 면) · --p-primary(메뉴·제목) · --p-accent(버튼·고른 메뉴) · --p-text(본문).
-   주색·강조색 위의 글자는 바탕색 — 빌더 프롬프트가 그 조합이 읽히는 색을 고르게 한다.
+/* 틀의 색은 전부 빌더가 준 역할 여섯 개에서 나온다:
+   --p-bg(바탕) · --p-surface(카드·목록 면) · --p-primary(메뉴·제목) · --p-accent(버튼·고른 메뉴) · --p-text(본문) · --p-on-accent(버튼 위 글자).
+   주색 위의 글자는 바탕색 — 빌더 프롬프트가 그 조합이 읽히는 색을 고르게 한다.
+   강조색 위의 글자는 빌더 코드가 검정·흰색 중 대비가 높은 쪽으로 정한다 (밝은 강조색에서 바탕색 글자가 흐렸다).
    선·흐린 글자는 본문색을 옅게 섞어 만든다. 틀 바깥(창 테두리·폰 테두리)만 빌더 화면의 토큰을 쓴다. */
 
 .figureBox {
@@ -88,7 +89,7 @@
   padding: 6px 12px;
   border-radius: 8px;
   background: var(--p-accent);
-  color: var(--p-bg);
+  color: var(--p-on-accent);
   font-weight: 700;
   white-space: nowrap;
 }
