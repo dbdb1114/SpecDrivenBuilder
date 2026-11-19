@@ -106,6 +106,75 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/backoffice/traces": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Traces */
+        get: operations["list_traces_api_backoffice_traces_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/backoffice/traces/{run_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Trace */
+        get: operations["get_trace_api_backoffice_traces__run_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/backoffice/traces/{run_id}/calls/{n}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Call */
+        get: operations["get_call_api_backoffice_traces__run_id__calls__n__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/backoffice/nodes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Nodes */
+        get: operations["get_nodes_api_backoffice_nodes_get"];
+        /** Put Nodes */
+        put: operations["put_nodes_api_backoffice_nodes_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -119,6 +188,55 @@ export interface components {
             action: "submit" | "finish";
             /** Answers */
             answers: (components["schemas"]["OptionAnswer"] | components["schemas"]["CustomAnswer"] | components["schemas"]["DelegateAnswer"])[];
+        };
+        /** CallDetail */
+        CallDetail: {
+            /** N */
+            n: number;
+            /** At */
+            at: string;
+            /** Node */
+            node: string;
+            /** Model */
+            model: string;
+            /** Effort */
+            effort: string | null;
+            usage: components["schemas"]["Usage"];
+            /** Seconds */
+            seconds: number;
+            /** Dollars */
+            dollars: number | null;
+            /** Error */
+            error: string | null;
+            /** System */
+            system: string;
+            /** Prompt */
+            prompt: string;
+            /** Response */
+            response: string | null;
+        };
+        /**
+         * CallRow
+         * @description 호출 하나의 표 한 줄. n 은 1부터.
+         */
+        CallRow: {
+            /** N */
+            n: number;
+            /** At */
+            at: string;
+            /** Node */
+            node: string;
+            /** Model */
+            model: string;
+            /** Effort */
+            effort: string | null;
+            usage: components["schemas"]["Usage"];
+            /** Seconds */
+            seconds: number;
+            /** Dollars */
+            dollars: number | null;
+            /** Error */
+            error: string | null;
         };
         /** ConfirmAction */
         ConfirmAction: {
@@ -193,6 +311,35 @@ export interface components {
              * @enum {string}
              */
             key: "single-column" | "top-nav" | "sidebar-left" | "list-detail" | "dashboard" | "mobile-tabs";
+        };
+        /** NodeRow */
+        NodeRow: {
+            /** Node */
+            node: string;
+            /** Model */
+            model: string | null;
+            /** Effort */
+            effort: ("low" | "medium" | "high" | "xhigh" | "max") | null;
+        };
+        /** NodeSetting */
+        NodeSetting: {
+            /** Model */
+            model: string | null;
+            /** Effort */
+            effort: ("low" | "medium" | "high" | "xhigh" | "max") | null;
+        };
+        /** NodeSettingsView */
+        NodeSettingsView: {
+            /** Nodes */
+            nodes: components["schemas"]["NodeRow"][];
+            /** Efforts */
+            efforts: ("low" | "medium" | "high" | "xhigh" | "max")[];
+            /** Default Model */
+            default_model: string;
+            /** Known Models */
+            known_models: string[];
+            /** Error */
+            error: string | null;
         };
         /** Option */
         Option: {
@@ -324,6 +471,28 @@ export interface components {
             /** Item Ids */
             item_ids: string[];
         };
+        /** RunSummary */
+        RunSummary: {
+            usage: components["schemas"]["Usage"];
+            /** Seconds */
+            seconds: number;
+            /** Dollars */
+            dollars: number | null;
+            /** Run Id */
+            run_id: string;
+            /** Started At */
+            started_at: string;
+            /** Calls */
+            calls: number;
+        };
+        /** RunTrace */
+        RunTrace: {
+            /** Run Id */
+            run_id: string;
+            /** Rows */
+            rows: components["schemas"]["CallRow"][];
+            totals: components["schemas"]["Totals"];
+        };
         /**
          * RunView
          * @description 실행 하나의 현재 화면. `status` 에 맞는 필드 하나만 채워진다.
@@ -353,6 +522,25 @@ export interface components {
         StartRun: {
             /** Request */
             request: string;
+        };
+        /** Totals */
+        Totals: {
+            usage: components["schemas"]["Usage"];
+            /** Seconds */
+            seconds: number;
+            /** Dollars */
+            dollars: number | null;
+        };
+        /** Usage */
+        Usage: {
+            /** Input */
+            input: number;
+            /** Output */
+            output: number;
+            /** Cache Write */
+            cache_write: number;
+            /** Cache Read */
+            cache_read: number;
         };
         /** ValidationError */
         ValidationError: {
@@ -559,6 +747,144 @@ export interface operations {
                 };
                 content: {
                     "application/zip": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_traces_api_backoffice_traces_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RunSummary"][];
+                };
+            };
+        };
+    };
+    get_trace_api_backoffice_traces__run_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                run_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RunTrace"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_call_api_backoffice_traces__run_id__calls__n__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                run_id: string;
+                n: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CallDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_nodes_api_backoffice_nodes_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NodeSettingsView"];
+                };
+            };
+        };
+    };
+    put_nodes_api_backoffice_nodes_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    [key: string]: components["schemas"]["NodeSetting"];
+                };
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NodeSettingsView"];
                 };
             };
             /** @description Validation Error */
