@@ -6,6 +6,7 @@
 
 import json
 import os
+import re
 from datetime import datetime
 from pathlib import Path
 
@@ -104,3 +105,58 @@ def show(call: dict) -> str:
         call.get("response") or f"(실패) {call.get('error')}",
     ]
     return "\n".join(parts)
+
+
+# 백오피스가 쓰는 읽기 함수. 화면이 보낸 실행 이름을 경로로 쓰기 전에 이 모양만 받는다 — `../` 나 절대 경로로 기록 폴더 밖을 읽지 못하게.
+_RUN_ID = re.compile(r"[A-Za-z0-9_-]+")
+
+
+def run_path(run_id: str) -> Path | None:
+    """실행 이름을 기록 파일 경로로. 이름 모양이 틀리거나 파일이 없으면 None."""
+    if not _RUN_ID.fullmatch(run_id):
+        return None
+    path = trace_dir() / f"{run_id}.jsonl"
+    return path if path.is_file() else None
+
+
+def row(n: int, call: dict) -> dict:
+    """호출 하나의 표 한 줄 — 프롬프트·응답 전문은 뺀다."""
+    usage = call.get("usage") or {}
+    return {
+        "n": n,
+        "at": call.get("at", ""),
+        "node": call.get("node", "-"),
+        "model": call.get("model", ""),
+        "effort": call.get("effort"),
+        "usage": {k: usage.get(k, 0) for k in USAGE_KEYS},
+        "seconds": call.get("seconds", 0),
+        "dollars": cost(call.get("model", ""), usage),
+        "error": call.get("error"),
+    }
+
+
+def totals(rows: list[dict]) -> dict:
+    """표 합계. 가격을 모르는 호출이 하나라도 있으면 달러 합은 None — 일부만 더한 값을 합계로 보이지 않는다."""
+    dollars = [r["dollars"] for r in rows]
+    return {
+        "usage": {k: sum(r["usage"][k] for r in rows) for k in USAGE_KEYS},
+        "seconds": round(sum(r["seconds"] for r in rows), 1),
+        "dollars": None if None in dollars else sum(dollars),
+    }
+
+
+def runs() -> list[dict]:
+    """실행 목록, 최근 것부터. 실행 이름 · 시작 시각(첫 호출) · 호출 수 · 합계."""
+    found = []
+    for path in trace_dir().glob("*.jsonl"):
+        calls = load(path)
+        rows = [row(n, c) for n, c in enumerate(calls, 1)]
+        found.append(
+            {
+                "run_id": path.stem,
+                "started_at": rows[0]["at"] if rows else "",
+                "calls": len(rows),
+                **totals(rows),
+            }
+        )
+    return sorted(found, key=lambda r: r["started_at"], reverse=True)

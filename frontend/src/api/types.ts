@@ -17,3 +17,12 @@ export type Answer = AnswerSubmission["answers"][number];
 export type ConfirmScreen = Schemas["ConfirmScreen"];
 export type ConfirmItem = Schemas["ConfirmItem"];
 export type ConfirmReply = Schemas["ConfirmAction"] | Schemas["ReviseAction"];
+
+// 백오피스 (로컬 전용, /backoffice/)
+export type RunSummary = Schemas["RunSummary"];
+export type RunTrace = Schemas["RunTrace"];
+export type CallRow = Schemas["CallRow"];
+export type CallDetail = Schemas["CallDetail"];
+export type Usage = Schemas["Usage"];
+export type NodeSetting = Schemas["NodeSetting"];
+export type NodeSettingsView = Schemas["NodeSettingsView"];

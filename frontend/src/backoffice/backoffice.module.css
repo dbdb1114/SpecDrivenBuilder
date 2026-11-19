@@ -1,0 +1,334 @@
+/* 백오피스 화면 공통. 색은 src/index.css 의 토큰만 쓴다 (두 테마). */
+.shell {
+  min-height: 100dvh;
+  background: var(--bg);
+  color: var(--text);
+}
+
+.header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 24px;
+  padding: 16px clamp(16px, 4vw, 48px);
+  border-bottom: 1px solid var(--line);
+  background: var(--header-bg);
+}
+
+.title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-right: auto;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 18px;
+}
+
+.badge {
+  padding: 3px 9px;
+  border: 1px solid var(--warn);
+  border-radius: 999px;
+  color: var(--warn);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+}
+
+.tabs {
+  display: flex;
+  gap: 6px;
+  padding: 0;
+  list-style: none;
+  font-family: var(--font-mono);
+  font-size: 13px;
+}
+
+.tab,
+.tabOn {
+  display: inline-flex;
+  align-items: center;
+  min-height: 40px;
+  padding: 0 14px;
+  border: 1px solid var(--line-3);
+  border-radius: 999px;
+  color: var(--muted);
+  text-decoration: none;
+}
+
+.tab:hover {
+  border-color: var(--ac);
+  color: var(--ac);
+}
+
+.tabOn {
+  border-color: transparent;
+  background: var(--ac-fill);
+  color: var(--on-ac);
+  font-weight: 600;
+}
+
+.theme {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border: 1px solid var(--line-3);
+  border-radius: 12px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 18px;
+}
+
+.theme:hover {
+  border-color: var(--ac);
+  color: var(--ac);
+}
+
+/* 좁은 화면: 제목과 테마 버튼을 한 줄에, 탭은 아래 줄로. */
+@media (max-width: 600px) {
+  .nav {
+    order: 3;
+    flex-basis: 100%;
+  }
+}
+
+.main {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 24px clamp(16px, 4vw, 48px) 64px;
+}
+
+.panel {
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+  padding: clamp(16px, 3vw, 28px);
+  border: 1px solid var(--line-2);
+  border-radius: 22px;
+  background: var(--surface);
+}
+
+/* 그리드 칸은 기본으로 내용 폭보다 좁아지지 않는다 — 넓은 표가 패널을 밀어 페이지가 옆으로 밀리지 않게. */
+.panel > * {
+  min-width: 0;
+}
+
+.h1 {
+  font-family: var(--font-display);
+  font-size: clamp(20px, 3vw, 28px);
+  letter-spacing: -0.02em;
+  overflow-wrap: anywhere;
+}
+
+.muted {
+  color: var(--muted-2);
+  font-size: 13px;
+}
+
+.mono {
+  font-family: var(--font-mono);
+}
+
+code {
+  padding: 1px 6px;
+  border-radius: 6px;
+  background: var(--code-bg);
+  font-family: var(--font-mono);
+  font-size: 0.92em;
+  overflow-wrap: anywhere;
+}
+
+.back {
+  justify-self: start;
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  text-decoration: none;
+  overflow-wrap: anywhere;
+}
+
+.back:hover,
+.link:hover {
+  color: var(--ac);
+}
+
+/* 표는 패널 안에서만 가로로 밀린다 — 좁은 화면에서도 페이지 전체가 옆으로 밀리지 않는다. */
+.scroll {
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.table th,
+.table td {
+  padding: 9px 12px;
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+  font-weight: 400;
+}
+
+.table thead th {
+  background: var(--surface-3);
+  color: var(--muted-2);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+}
+
+.table tbody tr:hover {
+  background: var(--hover);
+}
+
+.table tfoot th,
+.table tfoot td {
+  border-bottom: 0;
+  background: var(--surface-2);
+  font-weight: 600;
+}
+
+.table .num {
+  text-align: right;
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+.link {
+  color: var(--text);
+  font-family: var(--font-mono);
+  text-decoration: underline;
+  text-decoration-color: var(--line-3);
+  text-underline-offset: 3px;
+}
+
+.warn {
+  color: var(--warn);
+}
+
+.ok {
+  color: var(--ac);
+}
+
+.problem {
+  display: grid;
+  gap: 6px;
+  padding: 14px 16px;
+  border: 1px solid var(--warn);
+  border-radius: 12px;
+  background: var(--surface-2);
+}
+
+.meta {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+  margin: 0;
+}
+
+.meta div {
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface-2);
+}
+
+.meta dt {
+  color: var(--muted-2);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+}
+
+.meta dd {
+  margin: 2px 0 0;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+
+.full {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface-2);
+}
+
+.full summary {
+  padding: 10px 14px;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.pre {
+  max-height: 70vh;
+  margin: 0;
+  padding: 14px;
+  overflow: auto;
+  border-top: 1px solid var(--line);
+  background: var(--code-bg);
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  line-height: 1.55;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.input {
+  width: 100%;
+  min-width: 150px;
+  min-height: 38px;
+  padding: 6px 10px;
+  border: 1px solid var(--line-3);
+  border-radius: 10px;
+  background: var(--surface-2);
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 13px;
+}
+
+.input:focus-visible {
+  border-color: var(--ac);
+  outline: none;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 12px;
+  margin-top: 16px;
+}
+
+.actions p {
+  flex-basis: 100%;
+  font-size: 13px;
+}
+
+.primary,
+.secondary {
+  min-height: 44px;
+  padding: 0 20px;
+  border-radius: 12px;
+  font-weight: 700;
+}
+
+.primary {
+  border: 0;
+  background: var(--ac-fill);
+  color: var(--on-ac);
+}
+
+.secondary {
+  border: 1px solid var(--line-3);
+  background: transparent;
+  color: var(--text);
+}

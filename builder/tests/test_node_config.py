@@ -112,3 +112,39 @@ def test_trace_records_the_model_and_effort_actually_used(
 
     (call,) = trace.load(tmp_path / "traces" / "no-run.jsonl")
     assert (call["model"], call["effort"]) == ("claude-haiku-5-5", "low")
+
+
+def test_save_writes_validated_settings_in_repo_shape(node_config_file):
+    node_config.save(
+        {
+            "select_stack": {"model": "claude-haiku-5-5", "effort": "low"},
+            "interview_user": {"model": None, "effort": None},
+        }
+    )
+
+    # 사람이 git diff 로 보는 파일이라 노드 순서를 고정하고 한 줄에 하나씩 쓴다.
+    assert node_config_file.read_text(encoding="utf-8") == (
+        "{\n"
+        '  "interview_user": { "model": null, "effort": null },\n'
+        '  "select_stack": { "model": "claude-haiku-5-5", "effort": "low" }\n'
+        "}\n"
+    )
+    assert node_config.setting("select_stack")["model"] == "claude-haiku-5-5"
+
+
+def test_save_keeps_repo_file_byte_for_byte(node_config_file):
+    repo_file = node_config.BUILDER_ROOT / "config" / "nodes.json"
+    text = repo_file.read_text(encoding="utf-8")
+
+    node_config.save(json.loads(text))
+
+    assert node_config_file.read_text(encoding="utf-8") == text
+
+
+def test_save_rejects_bad_settings_and_leaves_file(node_config_file):
+    write(node_config_file, {})
+
+    with pytest.raises(ValueError, match="모르는 노드"):
+        node_config.save({"select_stak": {"model": None, "effort": None}})
+
+    assert json.loads(node_config_file.read_text(encoding="utf-8")) == {}
