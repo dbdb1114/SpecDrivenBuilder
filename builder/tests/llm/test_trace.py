@@ -115,3 +115,21 @@ def test_cli_shows_latest_run_and_one_call(traces, monkeypatch, capsys):
     show_trace.main()
     out = capsys.readouterr().out
     assert "시스템 글" in out and "입력 글" in out and "응답 글" in out
+
+
+@pytest.mark.parametrize(
+    "run_id", ["../secret", "/etc/passwd", "a/b", "secret.jsonl", ""]
+)
+def test_run_path_stays_inside_trace_dir(traces, run_id):
+    """백오피스 화면이 보낸 실행 이름을 경로로 쓰기 전에 모양부터 본다 — 기록 폴더 밖을 읽지 못한다."""
+    (traces.parent / "secret.jsonl").write_text("{}", encoding="utf-8")
+
+    assert trace.run_path(run_id) is None
+
+
+def test_run_path_finds_existing_run(traces):
+    (traces / "261117-1-web-a").write_text("", encoding="utf-8")
+    (traces / "261117-1-web-a.jsonl").write_text("", encoding="utf-8")
+
+    assert trace.run_path("261117-1-web-a") == traces / "261117-1-web-a.jsonl"
+    assert trace.run_path("261117-2-web-b") is None
