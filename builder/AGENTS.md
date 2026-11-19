@@ -49,6 +49,10 @@ uv run python -m specbuilder.llm.show_trace <run_id> --show 3   # 3번째 호출
 `null` 이면 기본값. 호출할 때마다 다시 읽으므로 고치면 서버를 다시 띄우지 않아도 다음 호출부터 반영된다.
 형식이 틀리거나 모르는 노드 이름이 있으면 그 호출이 실패한다 — 기본값으로 조용히 돌지 않는다. 캐시는 모델별로 따로다.
 
+**백오피스.** `SPECBUILDER_BACKOFFICE=1` 로 띄우면 `/api/backoffice/**` 가 붙고, 프론트엔드 `npm run dev` 의 `/backoffice/` 에서
+호출 기록(실행 목록 · 호출별 표 · 전문)을 보고 `config/nodes.json` 을 고친다. 끄면 라우터가 등록되지 않는다 (`api/backoffice.py`).
+켜져 있어도 이 컴퓨터에서 온 요청(보낸 주소와 `Host` 둘 다)만 받는다. 상세: `docs/design/backoffice.md`.
+
 모델은 `SPECBUILDER_MODEL` (기본 `claude-sonnet-5-5`). `.env` 자동 로드는 없다 — `uv run --env-file .env <명령>` 으로 넘기거나 셸에서 export.
 키는 `.env` 에만 적는다 (커밋되지 않음). 변수를 추가하면 `.env.example` 을 갱신할 것.
 
