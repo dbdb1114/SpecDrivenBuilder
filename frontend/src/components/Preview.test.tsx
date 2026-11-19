@@ -5,7 +5,7 @@ import { Preview } from "./Preview";
 
 const KEYS: LayoutKey[] = ["single-column", "top-nav", "sidebar-left", "list-detail", "dashboard", "mobile-tabs"];
 
-const COLORS = { background: "#F5F7FA", surface: "#FBFCFD", primary: "#1E3A5F", accent: "#4A90D9", text: "#122339" };
+const COLORS = { background: "#F5F7FA", surface: "#FBFCFD", primary: "#1E3A5F", accent: "#4A90D9", text: "#122339", on_accent: "#000000" };
 const TEXTS = {
   title: "동아리",
   menu: ["모임", "회비"],
@@ -34,6 +34,7 @@ describe("Preview", () => {
     expect(box.style.getPropertyValue("--p-primary")).toBe(COLORS.primary);
     expect(box.style.getPropertyValue("--p-accent")).toBe(COLORS.accent);
     expect(box.style.getPropertyValue("--p-text")).toBe(COLORS.text);
+    expect(box.style.getPropertyValue("--p-on-accent")).toBe(COLORS.on_accent);
   });
 
   it("문구를 마크업으로 해석하지 않는다", () => {

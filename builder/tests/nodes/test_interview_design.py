@@ -39,7 +39,8 @@ def tone(label, colors):
     c = role_colors(list(colors))
     return (
         f"{label} (주색 {c['primary']}, 바탕 {c['background']}, "
-        f"강조 {c['accent']}, 면 {c['surface']}, 글자 {c['text']})"
+        f"강조 {c['accent']}, 면 {c['surface']}, 글자 {c['text']}, "
+        f"강조 위 글자 {c['on_accent']})"
     )
 
 
@@ -314,6 +315,17 @@ def test_role_colors_keep_picked_and_make_text_readable(colors):
     assert c["text"] != c["primary"]
 
 
+@pytest.mark.parametrize(
+    "accent",
+    ["#D9A05B", "#4A90D9", "#FFFF00", "#777777", "#1E3A5F", "#BB86FC", "#000000"],
+)
+def test_on_accent_is_black_or_white_readable_on_accent(accent):
+    """버튼 위 글자 — 밝은 강조색(베이지·하늘색·노랑)에서도 4.5:1 이상. 바탕색 글자로는 못 닿던 조합이다."""
+    c = role_colors(["#1E3A5F", "#FAF6F0", accent])
+    assert c["on_accent"] in ("#000000", "#FFFFFF")
+    assert contrast(c["on_accent"], accent) >= 4.5
+
+
 def test_role_colors_fill_missing_background_and_accent():
     c = role_colors(["#123456"])
     assert c["background"] == "#FFFFFF" and c["accent"] == "#123456"
@@ -326,7 +338,7 @@ def test_preview_ignores_llm_surface_and_text_and_reads_old_tone_content():
         design("layout", "confirmed", "아래 탭 [mobile-tabs]"),
     ]
     draft = draft_preview()
-    draft["colors"] |= {"surface": "#FFFFFF", "text": "#FFFFFF"}
+    draft["colors"] |= {"surface": "#FFFFFF", "text": "#FFFFFF", "on_accent": "#FFFFFF"}
     result, _ = run([design_reply([], [], draft)], state_with(items, question_round=1))
 
     bundle = result.update["pending_bundle"]
@@ -355,7 +367,7 @@ def test_change_color_reasks_only_color_then_previews_again():
                 design_reply([], [], draft_preview()),
                 design_reply([], [color_question()]),
                 design_reply([], [], draft_preview()),
-                design_reply(),
+                # "맞아요" 뒤에는 LLM 을 부르지 않는다 — 더 물을 것이 없다는 확인만 하는 호출이었다.
             ]
         }
     )
@@ -411,8 +423,8 @@ def test_change_color_reasks_only_color_then_previews_again():
     assert {"node": "interview_design", "reason": "resolved", "rounds": 4} in final[
         "interview_stops"
     ]
-    # resume 마다 LLM 을 다시 부르지 않는다: 묶음 4 + 마지막 답 반영 1
-    assert len(llm.calls_for("interview_design")) == 5
+    # resume 마다 LLM 을 다시 부르지 않는다: 묶음 4번에 4회. "맞아요" 만 고른 마지막 답은 호출 없이 끝난다.
+    assert len(llm.calls_for("interview_design")) == 4
     assert final.get("artifacts")
 
 
@@ -541,14 +553,12 @@ def test_revise_design_item_on_confirm_screen_asks_it_again():
                     [color_question(), layout_question()],
                 ),
                 design_reply([], [], draft_preview()),
-                design_reply(),
                 # 돌아온 뒤: LLM 이 지난 답으로 다시 확정하려 해도 버려지고 색을 다시 묻는다
                 design_reply(
                     [design("color-tone", "confirmed", "차분한 남색")],
                     [color_question()],
                 ),
                 design_reply([], [], draft_preview()),
-                design_reply(),
             ]
         }
     )
@@ -581,6 +591,123 @@ def test_revise_design_item_on_confirm_screen_asks_it_again():
     by_id = {i["id"]: i for i in screen["items"]}
     assert by_id["color-tone"]["content"] == tone("따뜻한 베이지", BEIGE)
     assert by_id["preview-check"]["status"] == "confirmed"
+
+
+# --- 끝났다는 확인만 하는 호출 생략
+
+
+def preview_bundle_state():
+    """색·배치를 고른 뒤 미리보기 묶음이 걸린 상태."""
+    items = [
+        design("color-tone", "confirmed", tone("따뜻한 베이지", BEIGE)),
+        design("layout", "confirmed", "아래 탭 [mobile-tabs]"),
+    ]
+    first, _ = run(
+        [design_reply([], [], draft_preview())], state_with(items, question_round=1)
+    )
+    return state_with(
+        first.update["spec_items"],
+        pending_bundle=first.update["pending_bundle"],
+        question_round=1,
+    )
+
+
+def test_preview_ok_ends_without_llm(monkeypatch):
+    answer(
+        monkeypatch,
+        {
+            "action": "submit",
+            "answers": [{"question_id": "q1", "kind": "option", "option_ids": ["o1"]}],
+        },
+    )
+    result, llm = run([], preview_bundle_state())
+
+    assert result.goto == "select_stack" and llm.calls == []
+    by_id = {i["id"]: i for i in result.update["spec_items"]}
+    assert by_id["preview-check"]["status"] == "confirmed"
+    assert result.update["interview_stops"] == [
+        {"node": "interview_design", "reason": "resolved", "rounds": 2}
+    ]
+    assert result.update["qa"][0]["answer"] == "맞아요"
+
+
+def test_typed_preview_feedback_still_calls_llm_and_adds_item(monkeypatch):
+    """미리보기에 직접 적은 답은 LLM 이 읽는다 — 실제로 "차트가 더 있으면 좋겠다"가 차트 항목을 새로 만든 경로다."""
+    feedback = "차트가 더 있으면 좋겠어요"
+    answer(
+        monkeypatch,
+        {
+            "action": "submit",
+            "answers": [{"question_id": "q1", "kind": "custom", "text": feedback}],
+        },
+    )
+    submitted, llm = run([], preview_bundle_state())
+    assert submitted.goto == "interview_design" and llm.calls == []
+
+    chart_question = {
+        "item_id": "chart",
+        "text": "어떤 차트가 있으면 좋을까요?",
+        "options": [
+            {"label": "월별 막대", "recommended": True},
+            {"label": "항목별 원"},
+        ],
+    }
+    result, llm = run(
+        [design_reply([design("chart")], [chart_question])],
+        state_with(
+            submitted.update["spec_items"],
+            qa=submitted.update["qa"],
+            question_round=2,
+        ),
+    )
+
+    assert len(llm.calls_for("interview_design")) == 1
+    assert feedback in llm.calls_for("interview_design")[0]
+    bundle = result.update["pending_bundle"]
+    assert [q["item_id"] for q in bundle["questions"]] == ["chart"]
+    assert "chart" in {i["id"] for i in result.update["spec_items"]}
+
+
+def density_bundle_state():
+    """미리보기는 이미 확인받았고, LLM 이 쓴 질문(밀도) 하나가 남은 상태."""
+    items = [
+        design("color-tone", "confirmed", tone("따뜻한 베이지", BEIGE)),
+        design("layout", "confirmed", "아래 탭 [mobile-tabs]"),
+        design("preview-check", "confirmed", "맞아요"),
+        design("density"),
+    ]
+    question = {
+        "item_id": "density",
+        "text": "한 화면에 얼마나 많이 보이면 좋을까요?",
+        "options": [{"label": "넉넉하게", "recommended": True}, {"label": "빽빽하게"}],
+    }
+    return state_with(items, pending_bundle=assign_ids([question], 2, True))
+
+
+def test_option_answer_with_nothing_left_ends_without_llm(monkeypatch):
+    answer(
+        monkeypatch,
+        {
+            "action": "submit",
+            "answers": [{"question_id": "q1", "kind": "option", "option_ids": ["o2"]}],
+        },
+    )
+    result, llm = run([], density_bundle_state())
+    assert result.goto == "select_stack" and llm.calls == []
+
+
+@pytest.mark.parametrize(
+    "answers",
+    [[{"question_id": "q1", "kind": "delegate"}], []],
+    ids=["delegate", "no-answer"],
+)
+def test_empty_delegated_item_still_goes_to_llm(monkeypatch, answers):
+    """맡긴 항목의 기본 방향은 다음 LLM 호출이 채운다 — 내용이 빈 채로 끝내지 않는다."""
+    answer(monkeypatch, {"action": "submit", "answers": answers})
+    result, llm = run([], density_bundle_state())
+    assert result.goto == "interview_design" and llm.calls == []
+    by_id = {i["id"]: i for i in result.update["spec_items"]}
+    assert by_id["density"]["status"] == "delegated"
 
 
 # --- 공통 항목 (design.md "공통 항목")

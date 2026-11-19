@@ -185,7 +185,7 @@ describe("StudioPage — 질문 묶음", () => {
           can_finish: true,
           preview: {
             layout: "sidebar-left",
-            colors: { background: "#F5F7FA", surface: "#FBFCFD", primary: "#1E3A5F", accent: "#4A90D9", text: "#122339" },
+            colors: { background: "#F5F7FA", surface: "#FBFCFD", primary: "#1E3A5F", accent: "#4A90D9", text: "#122339", on_accent: "#000000" },
             texts: {
               title: "가계부",
               menu: ["이번 달"],

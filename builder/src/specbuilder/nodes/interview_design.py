@@ -231,11 +231,17 @@ TEXT_CONTRAST = 7.0
 MIN_CONTRAST = 4.5
 
 
+def on_accent(accent: str) -> str:
+    """강조색을 채운 면(버튼) 위 글자색 — 검정과 흰색 중 대비가 높은 쪽. 둘 중 나은 쪽은 항상 4.5 이상이다."""
+    return max((BLACK, WHITE), key=lambda c: contrast(c, accent))
+
+
 def role_colors(colors: list[str]) -> PreviewColors:
     """[주색, 바탕색, 강조색] 에 역할 이름을 붙이고 면·글자색을 계산한다.
 
     색이 모자라면 바탕은 흰색, 강조는 주색으로 채운다. 면은 바탕을 조금 밝게, 글자는 주색 기운을 남긴 채
     바탕·면 위에서 읽히는 대비가 될 때까지 검정(밝은 바탕) 또는 흰색(어두운 바탕) 쪽으로 섞는다.
+    강조 위 글자는 검정·흰색 중 강조색에 대비가 높은 쪽이다.
     """
     primary = colors[0]
     background = colors[1] if len(colors) > 1 else WHITE
@@ -261,6 +267,7 @@ def role_colors(colors: list[str]) -> PreviewColors:
         "primary": primary,
         "accent": accent,
         "text": text,
+        "on_accent": on_accent(accent),
     }
 
 
@@ -271,7 +278,8 @@ def _describe(option: dict) -> str:
         c = role_colors(visual["colors"])
         return (
             f"{option['label']} (주색 {c['primary']}, 바탕 {c['background']}, "
-            f"강조 {c['accent']}, 면 {c['surface']}, 글자 {c['text']})"
+            f"강조 {c['accent']}, 면 {c['surface']}, 글자 {c['text']}, "
+            f"강조 위 글자 {c['on_accent']})"
         )
     return f"{option['label']} [{visual['key']}]"
 
@@ -322,20 +330,44 @@ def _reopen_preview(items: list) -> list:
     return list(by_id.values())
 
 
-def _build_preview(items: list, draft: DraftPreview | None) -> Preview | None:
+def _preview_due(items: list) -> bool:
+    """미리보기를 그려야 하는가 — 색·배치가 정해졌고 하나라도 사용자가 골랐는데 아직 확인받지 않았다."""
     by_id = {item["id"]: item for item in items}
     color, layout = by_id.get(COLOR_ITEM_ID), by_id.get(LAYOUT_ITEM_ID)
     check = by_id.get(PREVIEW_ITEM_ID)
     if color is None or layout is None:
-        return None
+        return False
     if "unknown" in (color["status"], layout["status"]):
-        return None
+        return False
     if "user" not in (color["decided_by"], layout["decided_by"]):
-        return None
-    if check is not None and check["status"] != "unknown":
+        return False
+    return check is None or check["status"] == "unknown"
+
+
+def _settled(items: list, bundle: dict, submission: dict) -> bool:
+    """방금 반영한 답으로 이 노드가 끝났는가 — 그렇다면 LLM 이 할 일이 없으니 부르지 않는다.
+
+    직접 적은 답은 LLM 이 읽어야 한다 (새 항목이 생길 수 있다). 내용이 빈 맡김 항목은 LLM 이 기본 방향을 채운다.
+    미리보기를 그려야 하면 문구를 LLM 이 쓴다.
+    """
+    kinds = {a["question_id"]: a["kind"] for a in submission["answers"]}
+    if any(kinds.get(q["id"], "delegate") == "custom" for q in bundle["questions"]):
+        return False
+    if needs_asking(items, AREA) or _preview_due(items):
+        return False
+    return not any(
+        item["area"] == AREA and item["status"] == "delegated" and not item["content"]
+        for item in items
+    )
+
+
+def _build_preview(items: list, draft: DraftPreview | None) -> Preview | None:
+    if not _preview_due(items):
         return None
     if draft is None:
         raise LLMCallError(f"{NODE}: 색 톤과 배치가 정해졌는데 미리보기 초안이 없음")
+    by_id = {item["id"]: item for item in items}
+    color, layout = by_id[COLOR_ITEM_ID], by_id[LAYOUT_ITEM_ID]
     # 사용자가 고른 값이 LLM 의 초안보다 우선이다. 직접 입력한 답이라 값이 없을 때만 LLM 이 고른 값을 쓴다.
     # _describe 는 주색·바탕·강조를 앞에 쓰므로 앞의 세 값만 읽으면 된다 (면·글자는 다시 계산해도 같다).
     drafted = draft["colors"]
@@ -412,6 +444,8 @@ def make_interview_design(llm: LLMClient):
             items = record_answers(items, bundle, submission, catalog)
             if submission["action"] == "finish":
                 return _stop(items, "user_finished", rounds + 1, qa)
+            if _settled(items, bundle, submission):
+                return _stop(items, "resolved", rounds + 1, qa)
             return Command(
                 update={
                     "spec_items": items,
