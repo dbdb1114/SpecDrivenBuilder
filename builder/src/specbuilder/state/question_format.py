@@ -59,7 +59,8 @@ Visual = Annotated[PaletteVisual | LayoutVisual, Field(discriminator="type")]
 class PreviewColors(TypedDict):
     """역할 이름이 붙은 색 — 프론트엔드가 "몇 번째 색이 무엇인지" 추측하지 않는다.
 
-    surface·text 는 LLM 이 아니라 빌더 코드가 다른 색에서 계산한다 (바탕 위 글자 대비를 코드가 보장).
+    surface·text·on_accent 는 LLM 이 아니라 빌더 코드가 다른 색에서 계산한다 (글자 대비를 코드가 보장).
+    on_accent 는 강조색을 채운 면(버튼) 위 글자색이다.
     """
 
     background: HexColor
@@ -67,6 +68,7 @@ class PreviewColors(TypedDict):
     primary: HexColor
     accent: HexColor
     text: HexColor
+    on_accent: HexColor
 
 
 class PreviewItem(TypedDict):
@@ -91,8 +93,13 @@ class Preview(TypedDict):
 def _drop_old_preview(value: object) -> object:
     # 작업 단위 I 이전 checkpoint 의 미리보기(colors 가 목록)는 새 틀에 입힐 문구가 없다 — 지어내지 않고 그림만 뺀다.
     # 같은 묶음의 "이 느낌이 맞나요? (배치: … / 색: …)" 질문은 문장만으로 뜻이 통한다.
-    if isinstance(value, dict) and isinstance(value.get("colors"), list):
-        return None
+    # 2026-11-17 이전 미리보기(on_accent 없음)도 같다 — 없는 역할을 여기서 계산하면 색 계산이 규격 모듈로 새어 나온다.
+    if isinstance(value, dict):
+        colors = value.get("colors")
+        if isinstance(colors, list) or (
+            isinstance(colors, dict) and "on_accent" not in colors
+        ):
+            return None
     return value
 
 
