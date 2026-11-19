@@ -16,6 +16,7 @@ from langgraph.checkpoint.sqlite import SqliteSaver
 from langgraph.types import Command
 from pydantic import ValidationError
 
+from specbuilder.api import backoffice
 from specbuilder.api.schemas import RunView, StartRun
 from specbuilder.graph.build import build_graph
 from specbuilder.llm import LLMCallError, make_client
@@ -161,6 +162,10 @@ def create_app(graph=None) -> FastAPI:
             media_type="application/zip",
             headers={"Content-Disposition": f'attachment; filename="{run_id}.zip"'},
         )
+
+    # 끈 상태가 기본이다 — 등록하지 않으면 어떤 주소로도 호출 기록이 읽히지 않고 OpenAPI 에도 나오지 않는다.
+    if backoffice.enabled():
+        app.include_router(backoffice.router)
 
     return app
 
